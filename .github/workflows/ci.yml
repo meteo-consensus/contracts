@@ -1,0 +1,21 @@
+# Same checks as `pnpm run check`, from the org's reusable workflow. The required status
+# check on main is "ci / CI".
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  ci:
+    uses: meteo-consensus/.github/.github/workflows/node-ci.yml@main
+    permissions:
+      contents: read
+      packages: read

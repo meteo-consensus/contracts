@@ -1,0 +1,9 @@
+# pnpm settings (supply chain, docs/standards.md). Setting names checked against pnpm 12.17.0.
+packages:
+  - "."
+
+# A version is installable only once it has been public for 7 days (minutes).
+minimumReleaseAge: 10080
+
+# No dependency runs install scripts unless listed here with a reason in the PR.
+onlyBuiltDependencies: []
