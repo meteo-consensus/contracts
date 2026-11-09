@@ -95,6 +95,11 @@ export const variableCatalogue: VariableCatalogue = Object.freeze({
     bounds: { min: 0, max: 150 }, // plausibility
     temporal: "instant",
   }),
+  /**
+   * Meteorological convention: the direction the wind comes from, in degrees clockwise from
+   * north. `360` means north and `0` means calm (no direction), so consumers exclude `0` from
+   * direction errors.
+   */
   wind_direction_10m: define({
     id: "wind_direction_10m",
     unit: "°",
