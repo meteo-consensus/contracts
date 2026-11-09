@@ -8,7 +8,7 @@ import {
   gustWindowOf,
   nativeStepAt,
 } from "./forecast-model-queries.ts";
-import { openMeteoAttribution } from "./forecast-providers.ts";
+import { openMeteoAttribution, providers } from "./forecast-providers.ts";
 import { VariableIdSchema, variableCatalogue } from "./variables.ts";
 
 const models = forecastModelIds.map((id) => forecastModelCatalogue[id]);
@@ -204,7 +204,7 @@ describe("forecast model catalogue", () => {
       expect(model.distributorAttribution).toBe(openMeteoAttribution);
       expect(model.provider.licence.url).toMatch(/^https:\/\//);
     }
-    expect(forecastModelCatalogue.arome_france.provider.credit).toBe("Données Météo-France");
+    expect(forecastModelCatalogue.arome_france.provider.credit).toBe(providers.meteo_france.credit);
   });
 
   it("is read-only all the way down", () => {

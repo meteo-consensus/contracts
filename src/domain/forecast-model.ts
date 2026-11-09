@@ -38,9 +38,10 @@ export const ProviderIdSchema = z.enum(providerIds);
  * count as one independent vote in a consensus. AROME France and AROME France HD are the same
  * run on two output grids, never two opinions. A grid change never changes the family.
  *
- * AROME and ARPEGE are separate families, but their independence is only partial: AROME takes its
- * lateral boundary conditions from ARPEGE (citation à vérifier). The owner confirms this split
- * (5 independent votes for 6 models, against 4 if they were merged) before release 0.1.0.
+ * AROME and ARPEGE are separate families: 5 independent votes for the 6 models (décision du
+ * propriétaire du 09/11/2026). Their independence is only partial (AROME takes its lateral
+ * boundary conditions from ARPEGE, citation à vérifier); scoring weights handle that correlation,
+ * not the catalogue.
  */
 export const providerFamilies = Object.freeze([
   "meteo_france_arome",
@@ -123,11 +124,21 @@ export interface Licence {
   readonly url: string;
 }
 
+/**
+ * What the provider requires to be shown with its data. `required`: `text` is the provider's own
+ * wording, shown next to the data, with every entry of `notices` (source, licence statement,
+ * disclaimer) where the provider demands them. `not_required`: the provider asks for no credit
+ * line (its other conditions still apply, see `licence`).
+ */
+export type Credit =
+  | { readonly kind: "required"; readonly text: string; readonly notices: readonly string[] }
+  | { readonly kind: "not_required" };
+
 export interface Provider {
   readonly id: ProviderId;
   readonly name: string;
-  /** Credit line to show with the data; `null` until the owner sets it (« à vérifier »). */
-  readonly credit: string | null;
+  /** `null` while the provider's requirement is not known (« à vérifier »). */
+  readonly credit: Credit | null;
   readonly licence: Licence;
 }
 

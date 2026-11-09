@@ -227,10 +227,13 @@ export const forecastModelCatalogue: ForecastModelCatalogue = deepFreeze({
       { untilLeadHours: 120, stepHours: 1 },
       { untilLeadHours: "open", stepHours: 3 },
     ],
-    // à vérifier: https://open-meteo.com/en/docs/gfs-api (09/11/2026) shows « Preceding hour max »
-    // in its hourly table and « Preceding 15 minutes max » in its 15-minutely section, which belongs
-    // to the 15-minutely models of the page (GFS is « Hourly » in its table); the issue
-    // (contracts#2) keeps GFS unknown because of the two labels: owner to confirm 1 h
+    // à vérifier, sources disagree (09/11/2026):
+    // - https://open-meteo.com/en/docs/gfs-api: « Preceding hour max » in its hourly table, « Preceding
+    //   15 minutes max » in its 15-minutely section (the 15-minutely models; GFS is « Hourly »);
+    // - NOAA NCEP inventory https://www.nco.ncep.noaa.gov/pmb/products/gfs/gfs.t00z.pgrb2.0p25.f003.shtml:
+    //   « GUST | surface | 3 hour fcst | Wind Speed (Gust) [m/s] », an instantaneous field, while
+    //   window fields read « 0-3 hour max » (TMAX).
+    // Until verified, GFS gust scores are « non publiable » (`gustWindowOf` returns null).
     gustWindowHours: null,
     // https://open-meteo.com/en/docs/gfs-api (09/11/2026), « Native Model Variables » of GFS and
     // HRRR: 2 m temperature and relative humidity, 10 m U and V wind, 10 m gusts, mean sea-level

@@ -14,17 +14,25 @@ export const openMeteoAttribution: DistributorAttribution = Object.freeze({
 });
 
 /**
- * Model providers. Names and licence links are those of https://open-meteo.com/en/licence
- * (« Data Sources », 09/11/2026) unless stated otherwise. A `null` credit is user-visible wording
- * the owner has not set yet (« à vérifier »).
+ * Model providers. Names are those of https://open-meteo.com/en/licence (« Data Sources »,
+ * 09/11/2026), which also links each provider's licence. Credits are each provider's own
+ * required wording, checked on its pages the same day.
+ *
+ * Every consensus or score is a modified use of the data: where a provider asks for a mention of
+ * modifications (ECMWF, DWD, CC BY 4.0), that wording is set where the derived value is served.
  */
 export const providers: { readonly [K in ProviderId]: Provider & { readonly id: K } } =
   Object.freeze({
     meteo_france: Object.freeze({
       id: "meteo_france",
       name: "Météo-France",
-      // Owner decision, factory docs/sources.md (09/11/2026): the mention is « Données Météo-France ».
-      credit: "Données Météo-France",
+      // Owner decision, factory docs/sources.md (09/11/2026): the mention is « Données Météo-France »;
+      // the Licence Ouverte 2.0 also requires the date of last update, served with the data.
+      credit: Object.freeze({
+        kind: "required",
+        text: "Données Météo-France",
+        notices: Object.freeze([]),
+      }),
       // Factory docs/sources.md (09/11/2026): Météo-France models under « Licence Ouverte / Etalab 2.0 »;
       // text checked on the Etalab document below the same day.
       licence: Object.freeze({
@@ -35,31 +43,66 @@ export const providers: { readonly [K in ProviderId]: Provider & { readonly id: 
     ecmwf: Object.freeze({
       id: "ecmwf",
       name: "European Centre for Medium-Range Weather Forecasts (ECMWF)",
-      credit: null, // à vérifier: wording for the owner
+      // https://apps.ecmwf.int/datasets/licences/general/ (« Terms of Use for ECMWF Open Data
+      // Products », 09/11/2026): « The following wording shall be attached to the services created
+      // with this ECMWF data product: Copyright statement: Copyright "This service is based on data
+      // and products of the European Centre for Medium-Range Weather Forecasts (ECMWF)". Source
+      // www.ecmwf.int Licence Statement: [...] Disclaimer: [...] », plus « Where applicable, an
+      // indication if the material has been modified ».
+      credit: Object.freeze({
+        kind: "required",
+        text: "This service is based on data and products of the European Centre for Medium-Range Weather Forecasts (ECMWF)",
+        notices: Object.freeze([
+          "Source www.ecmwf.int",
+          "This ECMWF data is published under a Creative Commons Attribution 4.0 International (CC BY 4.0). https://creativecommons.org/licenses/by/4.0/",
+          "ECMWF does not accept any liability whatsoever for any error or omission in the data, their availability, or for any loss or damage arising from their use.",
+        ]),
+      }),
+      // https://www.ecmwf.int/en/forecasts/accessing-forecasts/licences-available (09/11/2026):
+      // « ECMWF Open Data — programmatic access to IFS and AIFS model data at 25 km resolution, with
+      // 9 km native resolution available from 2026. [...] Licence: CC BY 4.0. »
       // https://www.ecmwf.int/en/forecasts/datasets/open-data (09/11/2026): « Their use is governed
-      // by the Creative Commons CC-BY-4.0 licence and the ECMWF Terms of Use »; Open-Meteo links it
-      // as « CC-BY Licence ».
+      // by the Creative Commons CC-BY-4.0 licence and the ECMWF Terms of Use ».
+      // Coverage à vérifier: https://open-meteo.com/en/docs/ecmwf-api calls its 9 km stream
+      // « real-time IFS HRES » and says « The open-data distribution has an additional delay of 2
+      // hours compared to the real-time IFS dissemination », so whether that stream is the CC BY 4.0
+      // open data is not confirmed. Not blocking for the non-commercial collection (ADR 0003);
+      // owner-only decision before any paid offer.
       licence: Object.freeze({
         name: "CC BY 4.0",
-        url: "https://www.ecmwf.int/en/forecasts/datasets/open-data",
+        url: "https://www.ecmwf.int/en/forecasts/accessing-forecasts/licences-available",
       }),
     }),
     dwd: Object.freeze({
       id: "dwd",
       name: "Deutscher Wetterdienst (DWD)",
-      credit: null, // à vérifier: wording for the owner
-      // Open-Meteo links « CC-BY Licence » without a version, and the DWD page does not name it in
-      // its static content (09/11/2026): name à vérifier on the URL below.
+      // https://www.dwd.de/DE/service/rechtliche_hinweise/vorlagen_quellenangabe.html (09/11/2026):
+      // the source note « ist unmittelbar an der verwendeten DWD-Information zu platzieren und wie
+      // folgt zu gestalten: In Textform: Quelle: Deutscher Wetterdienst »; for modified data, e.g.
+      // « Datenbasis: Deutscher Wetterdienst, Einzelwerte gemittelt ».
+      credit: Object.freeze({
+        kind: "required",
+        text: "Quelle: Deutscher Wetterdienst",
+        notices: Object.freeze([]),
+      }),
+      // https://www.dwd.de/DE/service/rechtliche_hinweise/rechtliche_hinweise_node.html (09/11/2026):
+      // « Alle frei zugänglichen Geodaten und Geodatendienste [...] dürfen unter den Bedingungen der
+      // Lizenz Creative Commons BY 4.0 (CC BY 4.0) unter Beigabe eines Quellenvermerks weiterverwendet
+      // werden. »
       licence: Object.freeze({
-        name: null,
-        url: "https://www.dwd.de/EN/service/copyright/copyright_node.html",
+        name: "CC BY 4.0",
+        url: "https://www.dwd.de/DE/service/rechtliche_hinweise/rechtliche_hinweise_node.html",
       }),
     }),
     noaa_ncep: Object.freeze({
       id: "noaa_ncep",
       name: "NOAA NCEP",
-      credit: null, // à vérifier: wording for the owner
-      // Open-Meteo links it as « Licence » without a name (09/11/2026): name à vérifier on the URL below.
-      licence: Object.freeze({ name: null, url: "https://www.weather.gov/disclaimer" }),
+      // https://www.weather.gov/disclaimer (09/11/2026): « The information on National Weather Service
+      // (NWS) Web pages are in the public domain, unless specifically noted otherwise, and may be used
+      // without charge for any lawful purpose so long as you do not: 1) claim it is your own [...],
+      // 2) use it in a manner that implies an endorsement or affiliation with NOAA/NWS, or 3) modify
+      // its content and then present it as official government material ». No credit line required.
+      credit: Object.freeze({ kind: "not_required" }),
+      licence: Object.freeze({ name: "Public domain", url: "https://www.weather.gov/disclaimer" }),
     }),
   });
