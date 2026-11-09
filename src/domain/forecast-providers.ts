@@ -30,8 +30,9 @@ export const providers: { readonly [K in ProviderId]: Provider & { readonly id: 
       // the Licence Ouverte 2.0 also requires the date of last update, served with the data.
       credit: Object.freeze({
         kind: "required",
-        text: "Données Météo-France",
-        notices: Object.freeze([]),
+        unmodified: Object.freeze({ text: "Données Météo-France", notices: Object.freeze([]) }),
+        // à vérifier — formulation du propriétaire (mention for consensus and scores)
+        derived: null,
       }),
       // Factory docs/sources.md (09/11/2026): Météo-France models under « Licence Ouverte / Etalab 2.0 »;
       // text checked on the Etalab document below the same day.
@@ -51,12 +52,30 @@ export const providers: { readonly [K in ProviderId]: Provider & { readonly id: 
       // indication if the material has been modified ».
       credit: Object.freeze({
         kind: "required",
-        text: "This service is based on data and products of the European Centre for Medium-Range Weather Forecasts (ECMWF)",
-        notices: Object.freeze([
-          "Source www.ecmwf.int",
-          "This ECMWF data is published under a Creative Commons Attribution 4.0 International (CC BY 4.0). https://creativecommons.org/licenses/by/4.0/",
-          "ECMWF does not accept any liability whatsoever for any error or omission in the data, their availability, or for any loss or damage arising from their use.",
-        ]),
+        unmodified: Object.freeze({
+          text: "This service is based on data and products of the European Centre for Medium-Range Weather Forecasts (ECMWF)",
+          notices: Object.freeze([
+            Object.freeze({
+              kind: "source",
+              text: "Source www.ecmwf.int",
+              url: "https://www.ecmwf.int",
+            }),
+            Object.freeze({
+              kind: "licence",
+              text: "This ECMWF data is published under a Creative Commons Attribution 4.0 International (CC BY 4.0).",
+              url: "https://creativecommons.org/licenses/by/4.0/",
+            }),
+            Object.freeze({
+              kind: "disclaimer",
+              text: "ECMWF does not accept any liability whatsoever for any error or omission in the data, their availability, or for any loss or damage arising from their use.",
+            }),
+          ]),
+        }),
+        // Same page: « Where applicable, an indication if the material has been modified and an
+        // indication of previous modifications »; the CC BY 4.0 terms quoted there: « indicate if
+        // changes were made ». The wording of that indication is not fixed by ECMWF:
+        // à vérifier — formulation du propriétaire.
+        derived: null,
       }),
       // https://www.ecmwf.int/en/forecasts/accessing-forecasts/licences-available (09/11/2026):
       // « ECMWF Open Data — programmatic access to IFS and AIFS model data at 25 km resolution, with
@@ -78,12 +97,20 @@ export const providers: { readonly [K in ProviderId]: Provider & { readonly id: 
       name: "Deutscher Wetterdienst (DWD)",
       // https://www.dwd.de/DE/service/rechtliche_hinweise/vorlagen_quellenangabe.html (09/11/2026):
       // the source note « ist unmittelbar an der verwendeten DWD-Information zu platzieren und wie
-      // folgt zu gestalten: In Textform: Quelle: Deutscher Wetterdienst »; for modified data, e.g.
-      // « Datenbasis: Deutscher Wetterdienst, Einzelwerte gemittelt ».
+      // folgt zu gestalten: In Textform: Quelle: Deutscher Wetterdienst » (unmodified use).
       credit: Object.freeze({
         kind: "required",
-        text: "Quelle: Deutscher Wetterdienst",
-        notices: Object.freeze([]),
+        unmodified: Object.freeze({
+          text: "Quelle: Deutscher Wetterdienst",
+          notices: Object.freeze([]),
+        }),
+        // Same page: « Bei weitergehenden Veränderungen, Bearbeitungen, Neugestaltungen oder
+        // sonstigen Abwandlungen erwartet der DWD mindestens eine Nennung des DWD in zentralen
+        // Quellenverzeichnissen oder im Impressum. Veränderungshinweise können z. B. lauten:
+        // "Datenbasis: Deutscher Wetterdienst, Rasterdaten bildlich wiedergegeben", "Datenbasis:
+        // Deutscher Wetterdienst, Einzelwerte gemittelt" [...] ». The change note is ours:
+        // à vérifier — formulation du propriétaire.
+        derived: null,
       }),
       // https://www.dwd.de/DE/service/rechtliche_hinweise/rechtliche_hinweise_node.html (09/11/2026):
       // « Alle frei zugänglichen Geodaten und Geodatendienste [...] dürfen unter den Bedingungen der

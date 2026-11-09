@@ -13,29 +13,48 @@ describe("forecast providers", () => {
   it("credits Météo-France as the owner decided", () => {
     expect(providers.meteo_france.credit).toEqual({
       kind: "required",
-      text: "Données Météo-France",
-      notices: [],
+      unmodified: { text: "Données Météo-France", notices: [] },
+      derived: null,
     });
   });
 
   it("credits ECMWF with the wording its terms of use attach to services", () => {
     expect(providers.ecmwf.credit).toEqual({
       kind: "required",
-      text: "This service is based on data and products of the European Centre for Medium-Range Weather Forecasts (ECMWF)",
-      notices: [
-        "Source www.ecmwf.int",
-        "This ECMWF data is published under a Creative Commons Attribution 4.0 International (CC BY 4.0). https://creativecommons.org/licenses/by/4.0/",
-        "ECMWF does not accept any liability whatsoever for any error or omission in the data, their availability, or for any loss or damage arising from their use.",
-      ],
+      unmodified: {
+        text: "This service is based on data and products of the European Centre for Medium-Range Weather Forecasts (ECMWF)",
+        notices: [
+          { kind: "source", text: "Source www.ecmwf.int", url: "https://www.ecmwf.int" },
+          {
+            kind: "licence",
+            text: "This ECMWF data is published under a Creative Commons Attribution 4.0 International (CC BY 4.0).",
+            url: "https://creativecommons.org/licenses/by/4.0/",
+          },
+          {
+            kind: "disclaimer",
+            text: "ECMWF does not accept any liability whatsoever for any error or omission in the data, their availability, or for any loss or damage arising from their use.",
+          },
+        ],
+      },
+      derived: null,
     });
   });
 
-  it("credits DWD with its text source note", () => {
+  it("credits DWD with its text source note for unmodified values", () => {
     expect(providers.dwd.credit).toEqual({
       kind: "required",
-      text: "Quelle: Deutscher Wetterdienst",
-      notices: [],
+      unmodified: { text: "Quelle: Deutscher Wetterdienst", notices: [] },
+      derived: null,
     });
+  });
+
+  it("leaves every derived wording to the owner (à vérifier)", () => {
+    for (const id of providerIds) {
+      const { credit } = providers[id];
+      if (credit?.kind === "required") {
+        expect(credit.derived).toBeNull();
+      }
+    }
   });
 
   it("records that NOAA requires no credit line", () => {
@@ -58,6 +77,11 @@ describe("forecast providers", () => {
     for (const id of providerIds) {
       expect(Object.isFrozen(providers[id])).toBe(true);
       expect(Object.isFrozen(providers[id].credit)).toBe(true);
+      const { credit } = providers[id];
+      if (credit?.kind === "required") {
+        expect(Object.isFrozen(credit.unmodified.notices)).toBe(true);
+        expect(credit.unmodified.notices.every((notice) => Object.isFrozen(notice))).toBe(true);
+      }
       expect(Object.isFrozen(providers[id].licence)).toBe(true);
     }
   });

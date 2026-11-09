@@ -124,14 +124,34 @@ export interface Licence {
   readonly url: string;
 }
 
+/** A notice the provider requires next to its credit; `url` when the provider gives one. */
+export interface CreditNotice {
+  readonly kind: "source" | "licence" | "disclaimer";
+  readonly text: string;
+  readonly url?: string;
+}
+
+/** One credit wording: the provider's text, shown next to the data, with its notices. */
+export interface CreditWording {
+  readonly text: string;
+  readonly notices: readonly CreditNotice[];
+}
+
 /**
- * What the provider requires to be shown with its data. `required`: `text` is the provider's own
- * wording, shown next to the data, with every entry of `notices` (source, licence statement,
- * disclaimer) where the provider demands them. `not_required`: the provider asks for no credit
- * line (its other conditions still apply, see `licence`).
+ * What the provider requires to be shown with its data.
+ * - `required`: `unmodified` is for raw per-model values; `derived` is for modified uses
+ *   (consensus, scores), for which providers require a mention of the changes. `derived: null`
+ *   means « à vérifier — formulation du propriétaire »: that user-visible wording is not fixed by
+ *   the provider and the owner has not set it.
+ * - `not_required`: the provider asks for no credit line (its other conditions still apply, see
+ *   `licence`); showing a courtesy credit is the owner's choice.
  */
 export type Credit =
-  | { readonly kind: "required"; readonly text: string; readonly notices: readonly string[] }
+  | {
+      readonly kind: "required";
+      readonly unmodified: CreditWording;
+      readonly derived: CreditWording | null;
+    }
   | { readonly kind: "not_required" };
 
 export interface Provider {

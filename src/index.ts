@@ -1,6 +1,8 @@
 /** Public entry of @meteo-consensus/contracts. */
 export type {
   Credit,
+  CreditNotice,
+  CreditWording,
   DistributorAttribution,
   ForecastModelDefinition,
   ForecastModelId,
