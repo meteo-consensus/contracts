@@ -70,12 +70,12 @@ Zod schemas of the raw data that `collector` writes and `db` stores, each with i
 
 - **`source`**: `ObservationSourceSchema`, `bdclim_hourly` only. Adding a source is a minor release.
 - **`fileKey`**: `SourceFileKeySchema`, the metropolitan department on 2 digits, `01` to `95`, the `<dep>` of `H_<dep>_latest-<AAAA-1>-<AAAA>.csv.gz`. Corsica is the single file `20` (`2A` and `2B` are rejected); overseas keys (3 digits) and `99` are out of scope.
-- **`url`**: the downloaded file, a bare `https` URL (no credentials, query or fragment), at most 2048 characters.
+- **`url`**: the downloaded file, a bare `https` URL (no credentials, query or fragment), at most 2048 characters. Its file name must carry `fileKey`: for `bdclim_hourly`, the last path segment starts with `H_<fileKey>_` (key `33` with the URL of `H_13_…` is rejected).
 - **`lastModified`**: the `Last-Modified` header of the downloaded file, converted to a `UtcInstant`. The data.gouv `last_modified` metadata can lag it by up to 3 days, so it is not used. It comes from the upstream clock and is not compared with `fetchedAt`.
-- **`etag`**: the raw `ETag` header (1 to 1024 characters), `null` when the response has none.
+- **`etag`**: the `ETag` header as received, at most 1024 characters, restricted to the RFC 9110 entity-tag grammar: an optional `W/`, then a quoted string of `%x21 / %x23-7E` (no space, control character, embedded `"` or `obs-text`). `null` when the response has none; `collector` also maps a non-conforming header to `null` (and fetches with a plain GET) rather than rejecting the file.
 - **`fetchedAt`**: when the file was downloaded; **`ingestedAt`**: when its rows were stored, `null` until then, never before `fetchedAt`.
 
-Example (times and ETag are illustrative, the URL follows the documented file naming):
+Example, from the S3 response headers of `H_33_latest-2025-2026.csv.gz`, 09/11/2026 16:05:36 UTC (`Last-Modified`, `ETag`, and `Date` as `fetchedAt`); `ingestedAt` is our own clock, derived from `fetchedAt` for the example:
 
 ```json
 {
@@ -83,8 +83,8 @@ Example (times and ETag are illustrative, the URL follows the documented file na
   "fileKey": "33",
   "url": "https://meteofrance.s3.sbg.io.cloud.ovh.net/data/synchro_ftp/BASE/HOR/H_33_latest-2025-2026.csv.gz",
   "lastModified": "2026-11-09T06:44:51Z",
-  "etag": "\"0123456789abcdef\"",
-  "fetchedAt": "2026-11-09T11:30:00Z",
-  "ingestedAt": "2026-11-09T11:32:10Z"
+  "etag": "\"a88e9de5467e4fd71bfe705af5500b0e-2\"",
+  "fetchedAt": "2026-11-09T16:05:36Z",
+  "ingestedAt": "2026-11-09T16:07:36Z"
 }
 ```
