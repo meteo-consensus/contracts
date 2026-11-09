@@ -107,6 +107,12 @@ export const variableCatalogue: VariableCatalogue = Object.freeze({
     bounds: { min: 0, max: 360 },
     temporal: "instant",
   }),
+  /**
+   * `max_preceding_1h` applies only to a source with no per-model window (observations). A
+   * forecast model's `gustWindowHours` overrides it (3 h for ECMWF IFS); when that window is
+   * `null` (unknown), the model's gusts are not paired (« données insuffisantes »): this 1 h
+   * default is never assumed for it.
+   */
   wind_gusts_10m: define({
     id: "wind_gusts_10m",
     unit: "m/s",
