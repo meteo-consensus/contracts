@@ -3,6 +3,7 @@
 // Node with type stripping off. Node refuses to strip types under node_modules, so this fails as
 // soon as `exports` points back at `src/*.ts`. No network: the runtime dependencies are linked
 // from this repository's node_modules instead of being installed. Same layout as db (db#18).
+// `pnpm pack` always adds the root LICENSE file, whatever `files` says (contracts#18).
 import { execFileSync, spawnSync } from "node:child_process";
 import {
   existsSync,
@@ -29,6 +30,7 @@ const dependencies = z.object({
   peerDependencies: z.record(z.string(), z.string()).default({}),
 });
 const manifest = dependencies.extend({
+  license: z.string(),
   exports: z.record(z.string(), z.object({ types: z.string(), default: z.string() }).strict()),
 });
 const NO_STRIP = "--no-strip-types";
@@ -86,18 +88,25 @@ beforeAll(() => {
 afterAll(() => rmSync(work, { recursive: true, force: true }));
 
 describe("packed package", () => {
-  it("ships the compiled dist only: no source, test or fixture file", () => {
+  it("ships the compiled dist and the licence only: no source, test or fixture file", () => {
     const entries = execFileSync("tar", ["-tzf", tarball], { cwd: work, encoding: "utf8" })
       .split("\n")
       .filter((line) => line !== "")
       .map((line) => line.replace(/^package\//, ""));
     expect(entries).toEqual(
-      expect.arrayContaining(["package.json", "dist/index.js", "dist/index.d.ts"]),
+      expect.arrayContaining(["package.json", "LICENSE", "dist/index.js", "dist/index.d.ts"]),
     );
     for (const entry of entries) {
-      expect(entry, entry).toMatch(/^(package\.json|README\.md|dist\/.+\.(js|d\.ts))$/);
+      expect(entry, entry).toMatch(/^(package\.json|README\.md|LICENSE|dist\/.+\.(js|d\.ts))$/);
       expect(entry, entry).not.toMatch(/\.test\.|(^|\/)(test|fixtures|src)\//);
     }
+  });
+
+  it("is published under the MIT licence with the repository LICENSE file", () => {
+    expect(installedManifest().license).toBe("MIT");
+    expect(readFileSync(join(installed, "LICENSE"), "utf8")).toBe(
+      readFileSync(join(root, "LICENSE"), "utf8"),
+    );
   });
 
   it("resolves the root entry to compiled JavaScript and its declarations, types first", () => {

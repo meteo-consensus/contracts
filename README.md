@@ -97,3 +97,7 @@ Example, from the S3 response headers of `H_33_latest-2025-2026.csv.gz`, 09/11/2
   "ingestedAt": "2026-11-09T16:07:36Z"
 }
 ```
+
+## Licence
+
+MIT, see [`LICENSE`](LICENSE). The licence covers this package's code; the data described by its catalogues keeps its own licences and attributions (see the `provider` notices above).
