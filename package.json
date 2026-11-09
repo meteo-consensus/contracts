@@ -36,12 +36,13 @@
     "@vitest/coverage-v8": "5.0.5",
     "knip": "6.44.1",
     "typescript": "7.0.2",
-    "vitest": "5.0.5"
+    "vitest": "5.0.5",
+    "zod": "4.6.7"
+  },
+  "peerDependencies": {
+    "zod": "^4.6.7"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
-  },
-  "dependencies": {
-    "zod": "4.6.7"
   }
 }
