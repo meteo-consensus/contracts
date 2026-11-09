@@ -4,6 +4,13 @@
   "description": "Contrat public : OpenAPI, schémas Zod et types partagés (modèles, variables, unités, consensus). Paquet @meteo-consensus/contracts.",
   "license": "UNLICENSED",
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "!src/**/*.test.ts"
+  ],
   "engines": {
     "node": ">=26.13.0"
   },
@@ -29,5 +36,8 @@
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
   }
 }
