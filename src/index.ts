@@ -37,6 +37,37 @@ export {
   nativeStepAt,
 } from "./domain/forecast-model-queries.ts";
 export { openMeteoAttribution } from "./domain/forecast-providers.ts";
+export type { CellSelection, ForecastPoint, ForecastRun } from "./domain/forecast-run.ts";
+export {
+  CellSelectionSchema,
+  ForecastPointSchema,
+  ForecastRunSchema,
+  SourceApiSchema,
+} from "./domain/forecast-run.ts";
+export type { ForecastValue } from "./domain/forecast-value.ts";
+export {
+  ForecastValueSchema,
+  instantForecastVariables,
+  periodForecastVariables,
+} from "./domain/forecast-value.ts";
+export { ElevationMSchema, LatitudeSchema, LongitudeSchema } from "./domain/geo.ts";
+export type {
+  LeadTimeBand,
+  LeadTimeBandResult,
+  LeadTimeOutOfRange,
+} from "./domain/lead-time-bands.ts";
+export {
+  LeadTimeBandSchema,
+  leadTimeBandIds,
+  leadTimeBandOf,
+  MAX_LEAD_TIME_H,
+} from "./domain/lead-time-bands.ts";
+export type { GustSource, Observation, QualityCode } from "./domain/observation.ts";
+export { GustSourceSchema, ObservationSchema, QualityCodeSchema } from "./domain/observation.ts";
+export type { ObservationRevision } from "./domain/observation-revision.ts";
+export { ObservationRevisionSchema } from "./domain/observation-revision.ts";
+export type { NumPoste, Station, StationNetwork } from "./domain/station.ts";
+export { NumPosteSchema, StationNetworkSchema, StationSchema } from "./domain/station.ts";
 export type {
   CanonicalUnit,
   TemporalSemantics,

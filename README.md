@@ -46,3 +46,19 @@ Every value is defined once, with its source URL and verification date as a comm
 - **Errors**: the query helpers throw `RangeError` only for programmer errors (negative lead, invalid date).
 
 The catalogue is frozen and does no I/O.
+
+## Runs, stations and observations
+
+Zod schemas of the raw data that `collector` writes and `db` stores, each with its type inferred by `z.infer`. Every object is strict (an unknown field is rejected), every time is a `UtcInstant` (`UtcInstantSchema`: UTC to the second with a `Z`, no offset, no local time), and every value is in its variable's canonical unit, within the catalogue bounds, `null` when missing (never 0). Field names are camelCase like the catalogues; `db` maps them to its snake_case columns.
+
+- **`ForecastRunSchema`**: `model`, `initTime`, `modificationTime` and `availabilityTime` (Open-Meteo `last_run_modification_time` and `last_run_availability_time`, https://open-meteo.com/en/docs/model-updates, read 09/11/2026; neither before `initTime`), `fetchedAt` and `sourceApi`, the endpoint that served the run as a bare `https` URL (a query string could carry an API key, so it is rejected).
+- **`ForecastPointSchema`**: a run (`model`, `initTime`) sampled for a station (`numPoste`): requested and grid coordinates, grid elevation returned by the upstream, the `elevation=` sent (`elevationParamM`), `cellSelection` (`land`, `sea` or `nearest`, Open-Meteo `cell_selection`) and the station elevation at request time. The owner decided that the elevation sent is the station elevation; both are kept so a change of rule stays visible.
+- **`ForecastValueSchema`**: `validTime`, `leadTimeH` (whole hours, equal to `validTime` − `initTime`, from 0 to `MAX_LEAD_TIME_H` = 72), `value`, `interpolated`. `precipitation` and `wind_gusts_10m` (`periodForecastVariables`) also carry `periodEnd` = `validTime` and `periodStart`, the start of the model's window (3 h for an ECMWF IFS gust), or `null` when the window is unknown (`gustWindowOf` returns `null`); the other variables carry no period.
+- **`StationSchema`**: one version of a station: `numPoste` (`NumPosteSchema`, exactly 8 digits, a string), name, coordinates, elevation, `network` (`meteo_france`), `validFrom` and `validTo` (`null` for the current version, otherwise after `validFrom`).
+- **`ObservationSchema`**: station, `periodStart` ≤ `periodEnd` (equal for an instant), variable, value, `quality` (BDClim Q: `0`, `1`, `2`, `9`, or `null` for an empty Q, whether the value is filled or not). Per variable:
+  - `wind_gusts_10m` requires `gustSource` (`FXI3S` or `FXI`); `FXI3S` also requires `fxi3sComputed` (`STATUS_FXI3S` = 1: computed by a transfer function). Both sources are stored; `scoring` picks one.
+  - `wind_speed_10m` and `wind_direction_10m` require `periodUnverified`: the 10-minute window of BDClim `FF` and `DD` is verified only for some stations (BDC-7); the flag stays `true` until `collector` verifies it for the observation, and scores read it observation by observation.
+  - `cloud_cover` requires `skyObscured`: BDClim `N=9` is stored as `value: null` with `skyObscured: true`, never as 100 %; an obscured sky with a value is rejected.
+  - These fields are rejected on any other variable.
+- **`ObservationRevisionSchema`**: append-only change of a stored observation, identified by its logical key (`numPoste`, `periodEnd`, `variable`, `gustSource`, `null` outside gusts): old and new value, old and new quality code (each nullable), `revisedAt`.
+- **Lead time bands**: `leadTimeBandOf(leadTimeH)` returns `{ ok: true, band }` for the fixed bands `0-6` (closed: `[0, 6]`), `6-12`, `12-24`, `24-36`, `36-48` and `48-72` (each `]low, high]`), or `{ ok: false, error: { code: "lead_time_out_of_range" } }` for a negative, non-finite or over-72 h lead.
