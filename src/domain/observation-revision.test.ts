@@ -99,4 +99,36 @@ describe("ObservationRevisionSchema", () => {
       expect(accepted({ ...revision, revisedAt: revision.periodEnd })).toBe(true);
     });
   });
+
+  describe("obscured sky", () => {
+    const cloud = {
+      ...revision,
+      variable: "cloud_cover",
+      oldValue: null,
+      newValue: null,
+      oldQuality: 9,
+      newQuality: 9,
+      oldSkyObscured: false,
+      newSkyObscured: true,
+    };
+
+    it.each([
+      ["an empty N that becomes N=9 (null/false → null/true)", cloud],
+      [
+        "N=9 that becomes 5 octas (null/true → 62.5/false)",
+        { ...cloud, newValue: 62.5, oldSkyObscured: true, newSkyObscured: false },
+      ],
+    ])("accepts %s", (_name, input) => {
+      expect(ObservationRevisionSchema.parse(input)).toEqual(input);
+    });
+
+    it.each([
+      ["an unchanged pair", { ...cloud, oldSkyObscured: true }],
+      ["an obscured sky with a value", { ...cloud, newValue: 100 }],
+      ["a missing sky flag", { ...cloud, newSkyObscured: undefined }],
+      ["a sky flag on another variable", { ...revision, oldSkyObscured: false }],
+    ])("rejects %s", (_name, input) => {
+      expect(accepted(input)).toBe(false);
+    });
+  });
 });

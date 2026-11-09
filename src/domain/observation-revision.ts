@@ -23,18 +23,27 @@ const revisionBase = {
 };
 
 /**
- * A change of value, quality code or FXI3S status of a stored observation, kept append-only.
- * A revision that changes nothing is rejected. `periodUnverified` and `skyObscured` are not
- * revised here: the first is set by `collector` rules, the second follows the value.
- * `oldFxi3sComputed` and `newFxi3sComputed` follow the observation rule: `null` exactly when the
- * matching value is missing.
+ * A change of value, quality code, FXI3S status or obscured sky flag of a stored observation,
+ * kept append-only. A revision that changes nothing is rejected. `periodUnverified` is not
+ * revised here: it is set by `collector` rules. The flags follow the observation rules on each
+ * side: `oldFxi3sComputed` and `newFxi3sComputed` are `null` exactly when the matching value is
+ * missing; `oldSkyObscured` and `newSkyObscured` (cloud cover only) being `true` require a
+ * missing value. An empty `N` that becomes `N=9` keeps `null` values and is a revision through
+ * its flag.
  */
 export const ObservationRevisionSchema = z
   .discriminatedUnion("variable", [
     z.strictObject({
       ...revisionBase,
-      variable: VariableIdSchema.exclude(["wind_gusts_10m"]),
+      variable: VariableIdSchema.exclude(["wind_gusts_10m", "cloud_cover"]),
       gustSource: z.null(),
+    }),
+    z.strictObject({
+      ...revisionBase,
+      variable: z.literal("cloud_cover"),
+      gustSource: z.null(),
+      oldSkyObscured: z.boolean(),
+      newSkyObscured: z.boolean(),
     }),
     z.discriminatedUnion("gustSource", [
       z.strictObject({
@@ -62,6 +71,7 @@ export const ObservationRevisionSchema = z
       });
     }
     checkFxi3sStatus(ctx, revision);
+    checkSkyObscured(ctx, revision);
     if (!changesSomething(revision)) {
       ctx.addIssue({ code: "custom", path: [], message: "a revision must change something" });
     }
@@ -72,10 +82,13 @@ export type ObservationRevision = z.infer<typeof ObservationRevisionSchema>;
 function changesSomething(revision: ObservationRevision): boolean {
   const statusChanged =
     "oldFxi3sComputed" in revision && revision.oldFxi3sComputed !== revision.newFxi3sComputed;
+  const skyChanged =
+    "oldSkyObscured" in revision && revision.oldSkyObscured !== revision.newSkyObscured;
   return (
     revision.oldValue !== revision.newValue ||
     revision.oldQuality !== revision.newQuality ||
-    statusChanged
+    statusChanged ||
+    skyChanged
   );
 }
 
@@ -94,6 +107,21 @@ function checkFxi3sStatus(ctx: z.RefinementCtx, revision: ObservationRevision): 
         path: [key],
         message: `${key} is null exactly when the value is missing`,
       });
+    }
+  }
+}
+
+function checkSkyObscured(ctx: z.RefinementCtx, revision: ObservationRevision): void {
+  if (!("oldSkyObscured" in revision)) {
+    return;
+  }
+  const sides = [
+    ["oldSkyObscured", revision.oldSkyObscured, revision.oldValue],
+    ["newSkyObscured", revision.newSkyObscured, revision.newValue],
+  ] as const;
+  for (const [key, obscured, value] of sides) {
+    if (obscured && value !== null) {
+      ctx.addIssue({ code: "custom", path: [key], message: "an obscured sky has no value" });
     }
   }
 }

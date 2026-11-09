@@ -29,7 +29,8 @@ describe("forecast period start tied to the catalogue", () => {
       start: "2026-11-09T11:00:00Z",
       ok: false,
     },
-    { name: "ecmwf_ifs gust, unknown window", model: "ecmwf_ifs", start: null, ok: false },
+    { name: "ecmwf_ifs gust, window not stored", model: "ecmwf_ifs", start: null, ok: true },
+    { name: "arome_france gust, window not stored", model: "arome_france", start: null, ok: true },
     {
       name: "arome_france gust, 1 h window",
       model: "arome_france",
@@ -42,7 +43,7 @@ describe("forecast period start tied to the catalogue", () => {
       start: "2026-11-09T11:00:00Z",
       ok: false,
     },
-    { name: "gfs gust, unknown window", model: "gfs", start: null, ok: true },
+    { name: "gfs gust, window not stored", model: "gfs", start: null, ok: true },
   ])("$name: accepted $ok", ({ model, start, ok }) => {
     expect(accepted({ ...gust, model, periodStart: start })).toBe(ok);
   });

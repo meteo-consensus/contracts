@@ -38,7 +38,8 @@ export const observationPeriodMinutes: { readonly [K in VariableId]: number } = 
 });
 
 /**
- * Fields shared by every observation. The period is in UTC, `]periodStart, periodEnd]`, and lasts
+ * Fields shared by every observation. Times are UTC. `periodEnd` is the instant the value refers
+ * to; when the length is non-zero, the period is `]periodStart, periodEnd]`. The length is
  * exactly `observationPeriodMinutes[variable]`. `value` is in the variable's canonical unit
  * (m/s for wind, as BDClim reports it), within its bounds, `null` when missing (never 0).
  */

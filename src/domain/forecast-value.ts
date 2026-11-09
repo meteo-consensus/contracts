@@ -70,8 +70,11 @@ type PeriodForecast = z.infer<typeof precipitationValue> | z.infer<typeof gustVa
 /**
  * One forecast value. A period variable carries its period `]periodStart, periodEnd]`:
  * `periodEnd` = `validTime` and `periodStart` = `validTime` minus the window of
- * `windowMinutes` (1 h for precipitation, `gustWindowOf(model)` for gusts). A gust whose window
- * is unknown has `periodStart: null`, never a guessed 1 h. A period that starts before
+ * `windowMinutes` (1 h for precipitation, `gustWindowOf(model)` for gusts). A gust may have
+ * `periodStart: null`, for any model: the window is not stored, and scoring never pairs that row.
+ * A non-null gust start requires a known window and matches it, never a guessed 1 h. Allowing
+ * `null` for every model keeps stored rows parseable when a catalogue window becomes known
+ * later. A period that starts before
  * `initTime` is rejected (décision du propriétaire du 09/11/2026): the consumer drops such values
  * (precipitation at lead 0, an early gust window) before validating.
  */
@@ -107,14 +110,15 @@ function checkForecastPeriod(ctx: z.RefinementCtx, forecast: PeriodForecast): vo
   }
   const minutes = windowMinutes(forecast);
   const { periodStart, periodEnd } = forecast;
-  if (periodStart === null || minutes === null) {
-    if (periodStart !== minutes) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["periodStart"],
-        message: "periodStart is null exactly when the model's window is unknown",
-      });
-    }
+  if (periodStart === null) {
+    return;
+  }
+  if (minutes === null) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["periodStart"],
+      message: "periodStart must be null when the model's window is unknown",
+    });
     return;
   }
   checkPeriodLength(ctx, { periodStart, periodEnd }, minutes);
