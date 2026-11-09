@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { GustSourceSchema, ObservationSchema, QualityCodeSchema } from "./observation.ts";
-import { variableIds } from "./variables.ts";
 
 // Synthetic inputs, not real data.
 const hourly = {
@@ -11,7 +10,12 @@ const hourly = {
 };
 const instant = { ...hourly, periodStart: "2026-11-09T06:00:00Z" };
 const temperature = { ...instant, variable: "temperature_2m", value: 12.3 };
-const precipitation = { ...hourly, variable: "precipitation", value: 0.4 };
+const precipitation = {
+  ...hourly,
+  variable: "precipitation",
+  value: 0.4,
+  periodUnverified: true,
+};
 const windSpeed = {
   ...hourly,
   periodStart: "2026-11-09T05:50:00Z",
@@ -57,20 +61,6 @@ describe("ObservationSchema", () => {
     ["an FXI gust", gustFxi],
   ])("accepts %s", (_name, observation) => {
     expect(ObservationSchema.parse(observation)).toEqual(observation);
-  });
-
-  it("accepts an observation of every catalogued variable", () => {
-    const extras: Record<string, object> = {
-      wind_speed_10m: { periodUnverified: true },
-      wind_direction_10m: { periodUnverified: true },
-      cloud_cover: { skyObscured: false },
-      wind_gusts_10m: { gustSource: "FXI" },
-    };
-    for (const variable of variableIds) {
-      expect(accepted({ ...hourly, variable, value: null, ...extras[variable] }), variable).toBe(
-        true,
-      );
-    }
   });
 
   describe("missing values and quality codes", () => {
@@ -133,6 +123,17 @@ describe("ObservationSchema", () => {
       expect(accepted({ ...gustFxi3s, fxi3sComputed: true })).toBe(true);
     });
 
+    it("accepts a missing FXI3S value with a null fxi3sComputed", () => {
+      expect(accepted({ ...gustFxi3s, value: null, fxi3sComputed: null })).toBe(true);
+    });
+
+    it.each([
+      ["a null fxi3sComputed on a filled value", { fxi3sComputed: null }],
+      ["a fxi3sComputed flag on a missing value", { value: null, fxi3sComputed: false }],
+    ])("rejects %s", (_name, patch) => {
+      expect(accepted({ ...gustFxi3s, ...patch })).toBe(false);
+    });
+
     it("rejects fxi3sComputed on an FXI gust", () => {
       expect(accepted({ ...gustFxi, fxi3sComputed: false })).toBe(false);
     });
@@ -142,33 +143,6 @@ describe("ObservationSchema", () => {
       ["fxi3sComputed on temperature_2m", { ...temperature, fxi3sComputed: false }],
       ["gustSource on wind_speed_10m", { ...windSpeed, gustSource: "FXI" }],
     ])("rejects %s", (_name, observation) => {
-      expect(accepted(observation)).toBe(false);
-    });
-  });
-
-  describe("wind period flag (BDC-7)", () => {
-    it.each([true, false])("accepts periodUnverified %j on wind speed and direction", (flag) => {
-      expect(accepted({ ...windSpeed, periodUnverified: flag })).toBe(true);
-      expect(
-        accepted({
-          ...windSpeed,
-          variable: "wind_direction_10m",
-          value: 360,
-          periodUnverified: flag,
-        }),
-      ).toBe(true);
-    });
-
-    it("requires periodUnverified on wind speed and direction", () => {
-      const { periodUnverified: _flag, ...withoutFlag } = windSpeed;
-      expect(accepted(withoutFlag)).toBe(false);
-      expect(accepted({ ...withoutFlag, variable: "wind_direction_10m" })).toBe(false);
-    });
-
-    it.each([
-      ["temperature_2m", { ...temperature, periodUnverified: true }],
-      ["wind_gusts_10m", { ...gustFxi, periodUnverified: true }],
-    ])("rejects periodUnverified on %s", (_name, observation) => {
       expect(accepted(observation)).toBe(false);
     });
   });

@@ -88,6 +88,7 @@ describe("ForecastValueSchema", () => {
 
   it.each([
     ["no period start", { periodStart: undefined }],
+    ["a null period start", { periodStart: null }],
     ["no period end", { periodEnd: undefined }],
     ["a period that does not end at the valid time", { periodEnd: "2026-11-09T11:00:00Z" }],
     ["an empty period", { periodStart: "2026-11-09T12:00:00Z" }],

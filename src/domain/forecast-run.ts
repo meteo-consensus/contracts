@@ -29,9 +29,12 @@ export const SourceApiSchema = z
 
 /**
  * One fetched run of a model. Times are UTC. `modificationTime` and `availabilityTime` are
- * Open-Meteo's `last_run_modification_time` (download and conversion done) and
- * `last_run_availability_time` (served by the API) for this run
- * (https://open-meteo.com/en/docs/model-updates, read 09/11/2026); `fetchedAt` is our clock.
+ * Open-Meteo's `last_run_modification_time` (« the time when the data download and conversion
+ * were completed ») and `last_run_availability_time` (« the time when the data is actually
+ * accessible on the API server »), https://open-meteo.com/en/docs/model-updates, read
+ * 09/11/2026. Both describe work on the run, so neither may precede `initTime`; the order
+ * between them is not stated there (« à vérifier ») and is not enforced. `fetchedAt` is our
+ * clock and may not precede `initTime` either.
  */
 export const ForecastRunSchema = z
   .strictObject({
@@ -43,7 +46,7 @@ export const ForecastRunSchema = z
     sourceApi: SourceApiSchema,
   })
   .superRefine((run, ctx) => {
-    for (const key of ["modificationTime", "availabilityTime"] as const) {
+    for (const key of ["modificationTime", "availabilityTime", "fetchedAt"] as const) {
       if (hoursBetween(run.initTime, run[key]) < 0) {
         ctx.addIssue({ code: "custom", path: [key], message: `${key} is before initTime` });
       }

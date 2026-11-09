@@ -40,6 +40,7 @@ describe("ForecastRunSchema", () => {
     ["a fractional fetch time", { fetchedAt: "2026-11-09T08:00:00.123Z" }],
     ["a modification before the init", { modificationTime: "2026-11-09T05:59:59Z" }],
     ["an availability before the init", { availabilityTime: "2026-11-09T05:00:00Z" }],
+    ["a fetch before the init", { fetchedAt: "2026-11-09T05:59:59Z" }],
     ["an unknown field", { runId: 1 }],
   ])("rejects %s", (_name, patch) => {
     expect(runAccepted({ ...run, ...patch })).toBe(false);

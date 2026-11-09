@@ -63,7 +63,12 @@ export {
   MAX_LEAD_TIME_H,
 } from "./domain/lead-time-bands.ts";
 export type { GustSource, Observation, QualityCode } from "./domain/observation.ts";
-export { GustSourceSchema, ObservationSchema, QualityCodeSchema } from "./domain/observation.ts";
+export {
+  GustSourceSchema,
+  ObservationSchema,
+  observationPeriodMinutes,
+  QualityCodeSchema,
+} from "./domain/observation.ts";
 export type { ObservationRevision } from "./domain/observation-revision.ts";
 export { ObservationRevisionSchema } from "./domain/observation-revision.ts";
 export type { NumPoste, Station, StationNetwork } from "./domain/station.ts";

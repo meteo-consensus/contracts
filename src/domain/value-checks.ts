@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import { hoursBetween } from "./instants.ts";
+import { minutesBetween } from "./instants.ts";
 import { type VariableId, variableValueSchema } from "./variables.ts";
 
 /** Adds an issue at `path` when `value` is outside the bounds of `variable` (null passes). */
@@ -18,16 +18,17 @@ export function checkValueBounds(
   }
 }
 
-/** Adds an issue on `periodStart` when the period ends before it starts. */
-export function checkPeriodOrder(
+/** Adds an issue on `periodStart` unless the period lasts exactly `minutes`. */
+export function checkPeriodLength(
   ctx: z.RefinementCtx,
   period: { readonly periodStart: string; readonly periodEnd: string },
+  minutes: number,
 ): void {
-  if (hoursBetween(period.periodStart, period.periodEnd) < 0) {
+  if (minutesBetween(period.periodStart, period.periodEnd) !== minutes) {
     ctx.addIssue({
       code: "custom",
       path: ["periodStart"],
-      message: "periodStart must not be after periodEnd",
+      message: `the period must last exactly ${minutes} min`,
     });
   }
 }

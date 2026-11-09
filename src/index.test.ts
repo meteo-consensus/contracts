@@ -26,6 +26,7 @@ describe("package entry", () => {
         "instantForecastVariables",
         "leadTimeBandIds",
         "leadTimeBandOf",
+        "observationPeriodMinutes",
         "periodForecastVariables",
         "ProviderFamilySchema",
         "ProviderIdSchema",

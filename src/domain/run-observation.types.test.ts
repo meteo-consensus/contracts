@@ -20,18 +20,25 @@ describe("inferred run and observation types", () => {
   it("gives a period only to period forecast values", () => {
     type Period = Extract<ForecastValue, { variable: PeriodVariable }>;
     type Instant = Extract<ForecastValue, { variable: InstantVariable }>;
+    type Precipitation = Extract<ForecastValue, { variable: "precipitation" }>;
+    type Gust = Extract<ForecastValue, { variable: "wind_gusts_10m" }>;
     expectTypeOf<Period["periodStart"]>().toEqualTypeOf<string | null>();
+    expectTypeOf<Precipitation["periodStart"]>().toEqualTypeOf<string>();
+    expectTypeOf<Gust["periodStart"]>().toEqualTypeOf<string | null>();
     expectTypeOf<Has<Instant, "periodStart">>().toEqualTypeOf<false>();
   });
 
   it("narrows observation flags by variable and gust source", () => {
     type Fxi3s = Extract<Observation, { gustSource: "FXI3S" }>;
     type Fxi = Extract<Observation, { gustSource: "FXI" }>;
-    type Wind = Extract<Observation, { variable: "wind_speed_10m" | "wind_direction_10m" }>;
+    type Flagged = Extract<
+      Observation,
+      { variable: "precipitation" | "wind_speed_10m" | "wind_direction_10m" }
+    >;
     type Cloud = Extract<Observation, { variable: "cloud_cover" }>;
-    expectTypeOf<Fxi3s["fxi3sComputed"]>().toEqualTypeOf<boolean>();
+    expectTypeOf<Fxi3s["fxi3sComputed"]>().toEqualTypeOf<boolean | null>();
     expectTypeOf<Has<Fxi, "fxi3sComputed">>().toEqualTypeOf<false>();
-    expectTypeOf<Wind["periodUnverified"]>().toEqualTypeOf<boolean>();
+    expectTypeOf<Flagged["periodUnverified"]>().toEqualTypeOf<boolean>();
     expectTypeOf<Cloud["skyObscured"]>().toEqualTypeOf<boolean>();
     expectTypeOf<Observation["quality"]>().toEqualTypeOf<0 | 1 | 2 | 9 | null>();
   });
