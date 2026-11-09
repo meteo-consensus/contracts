@@ -3,20 +3,7 @@ import { ForecastModelIdSchema, UtcInstantSchema } from "./forecast-model.ts";
 import { ElevationMSchema, LatitudeSchema, LongitudeSchema } from "./geo.ts";
 import { hoursBetween } from "./instants.ts";
 import { NumPosteSchema } from "./station.ts";
-
-/** True for a canonical `https:` URL with no credentials, query or fragment. */
-function isBareHttpsUrl(value: string): boolean {
-  const url = URL.parse(value);
-  return (
-    url !== null &&
-    url.href === value &&
-    url.protocol === "https:" &&
-    url.username === "" &&
-    url.password === "" &&
-    url.search === "" &&
-    url.hash === ""
-  );
-}
+import { isBareHttpsUrl } from "./urls.ts";
 
 /**
  * Endpoint that served the run (`https://api.open-meteo.com/v1/forecast`). Bare URL only: a

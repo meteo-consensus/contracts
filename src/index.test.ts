@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import * as contracts from "./index.ts";
 
 describe("package entry", () => {
-  it("exposes the catalogues, the run, station and observation schemas and their helpers", () => {
+  it("exposes the catalogues, the run, station, observation and source file schemas and their helpers", () => {
     expect(Object.keys(contracts).sort()).toEqual(
       [
         "CellSelectionSchema",
@@ -19,8 +19,11 @@ describe("package entry", () => {
         "NumPosteSchema",
         "ObservationRevisionSchema",
         "ObservationSchema",
+        "ObservationSourceSchema",
         "QualityCodeSchema",
         "SourceApiSchema",
+        "SourceFileKeySchema",
+        "SourceFileSchema",
         "StationNetworkSchema",
         "StationSchema",
         "instantForecastVariables",

@@ -63,3 +63,28 @@ Zod schemas of the raw data that `collector` writes and `db` stores, each with i
   - These fields are rejected on any other variable.
 - **`ObservationRevisionSchema`**: append-only change of a stored observation, identified by its logical key (`numPoste`, `periodEnd`, `variable`, `gustSource`, `null` outside gusts): old and new value, old and new quality code (each nullable), old and new `fxi3sComputed` for an `FXI3S` gust, old and new `skyObscured` for cloud cover (so an empty `N` that becomes `N=9`, `null` on both sides, is still a revision), and `revisedAt` (not before `periodEnd`). Each side follows the observation rules. A revision that changes nothing is rejected. `periodUnverified` is not revised.
 - **Lead time bands**: `leadTimeBandOf(leadTimeH)` returns `{ ok: true, band }` for the fixed bands `0-6` (closed: `[0, 6]`), `6-12`, `12-24`, `24-36`, `36-48` and `48-72` (each `]low, high]`), or `{ ok: false, error: { code: "lead_time_out_of_range" } }` for a negative, non-finite or over-72 h lead.
+
+## Observation source files
+
+`SourceFileSchema` describes one downloaded observation source file and its last update date: the Licence Ouverte 2.0 requires the source and « la date de dernière mise à jour de l'Information réutilisée » wherever the data is reused. `collector` writes it, `db` stores it and `api` reads it for the attribution. The object is strict and its type is inferred by `z.infer` (`SourceFile`).
+
+- **`source`**: `ObservationSourceSchema`, `bdclim_hourly` only. Adding a source is a minor release.
+- **`fileKey`**: `SourceFileKeySchema`, the metropolitan department on 2 digits, `01` to `95`, the `<dep>` of `H_<dep>_latest-<AAAA-1>-<AAAA>.csv.gz`. Corsica is the single file `20` (`2A` and `2B` are rejected); overseas keys (3 digits) and `99` are out of scope.
+- **`url`**: the downloaded file, a bare `https` URL (no credentials, query or fragment), at most 2048 characters. Its file name must carry `fileKey`: for `bdclim_hourly`, the last path segment starts with `H_<fileKey>_` (key `33` with the URL of `H_13_…` is rejected).
+- **`lastModified`**: the `Last-Modified` header of the downloaded file, converted to a `UtcInstant`. The data.gouv `last_modified` metadata can lag it by up to 3 days, so it is not used. It comes from the upstream clock and is not compared with `fetchedAt`.
+- **`etag`**: the `ETag` header as received, at most 1024 characters, restricted to the RFC 9110 entity-tag grammar: an optional `W/`, then a quoted string of `%x21 / %x23-7E` (no space, control character, embedded `"` or `obs-text`). `null` when the response has none; `collector` also maps a non-conforming header to `null` (and fetches with a plain GET) rather than rejecting the file.
+- **`fetchedAt`**: when the file was downloaded; **`ingestedAt`**: when its rows were stored, `null` until then, never before `fetchedAt`.
+
+Example, from the S3 response headers of `H_33_latest-2025-2026.csv.gz`, 09/11/2026 16:05:36 UTC (`Last-Modified`, `ETag`, and `Date` as `fetchedAt`); `ingestedAt` is our own clock, derived from `fetchedAt` for the example:
+
+```json
+{
+  "source": "bdclim_hourly",
+  "fileKey": "33",
+  "url": "https://meteofrance.s3.sbg.io.cloud.ovh.net/data/synchro_ftp/BASE/HOR/H_33_latest-2025-2026.csv.gz",
+  "lastModified": "2026-11-09T06:44:51Z",
+  "etag": "\"a88e9de5467e4fd71bfe705af5500b0e-2\"",
+  "fetchedAt": "2026-11-09T16:05:36Z",
+  "ingestedAt": "2026-11-09T16:07:36Z"
+}
+```

@@ -71,6 +71,12 @@ export {
 } from "./domain/observation.ts";
 export type { ObservationRevision } from "./domain/observation-revision.ts";
 export { ObservationRevisionSchema } from "./domain/observation-revision.ts";
+export type { ObservationSource, SourceFile, SourceFileKey } from "./domain/source-file.ts";
+export {
+  ObservationSourceSchema,
+  SourceFileKeySchema,
+  SourceFileSchema,
+} from "./domain/source-file.ts";
 export type { NumPoste, Station, StationNetwork } from "./domain/station.ts";
 export { NumPosteSchema, StationNetworkSchema, StationSchema } from "./domain/station.ts";
 export type {
