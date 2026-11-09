@@ -6,6 +6,7 @@ import {
   ProviderIdSchema,
   providerFamilies,
   providerIds,
+  UtcInstantSchema,
 } from "./forecast-model.ts";
 
 describe("forecast model enums", () => {
@@ -41,5 +42,23 @@ describe("forecast model enums", () => {
 
   it.each(["arome", "dwd", "ICON"])("rejects the unknown family %j", (family) => {
     expect(ProviderFamilySchema.safeParse(family).success).toBe(false);
+  });
+});
+
+describe("UtcInstantSchema", () => {
+  it("accepts a UTC instant to the second with a Z suffix", () => {
+    expect(UtcInstantSchema.parse("2026-11-30T00:00:00Z")).toBe("2026-11-30T00:00:00Z");
+  });
+
+  it.each([
+    "garbageZ",
+    "2026-11-30T00:00:00+01:00",
+    "2026-11-30T00:00:00",
+    "2026-11-30T00:00:00.000Z",
+    "2026-11-30T00:00Z",
+    "2026-13-30T00:00:00Z",
+    "",
+  ])("rejects %j", (value) => {
+    expect(UtcInstantSchema.safeParse(value).success).toBe(false);
   });
 });

@@ -4,6 +4,7 @@ import {
   countIndependentVotes,
   gridAt,
   gridPeriodAt,
+  gustWindowOf,
   nativeStepAt,
 } from "./forecast-model-queries.ts";
 
@@ -50,7 +51,11 @@ describe("nativeStepAt", () => {
 
 const coarse: Grid = { kind: "lat_lon", label: "0.0625° (~7 km)", degrees: 0.0625, approxKm: 7 };
 const fine: Grid = { kind: "lat_lon", label: "0.01° (~1 km)", degrees: 0.01, approxKm: 1 };
-const switchover: GridChange = { firstRunInitUtc: "2026-11-30T00:00:00Z", grid: null };
+const switchover: GridChange = {
+  id: "test_native",
+  firstRunInitUtc: "2026-11-30T00:00:00Z",
+  grid: null,
+};
 const switched = { grid: coarse, gridChanges: [switchover] };
 
 describe("gridAt", () => {
@@ -73,7 +78,10 @@ describe("gridAt", () => {
   it("applies the latest change in effect when there are several", () => {
     const model = {
       grid: coarse,
-      gridChanges: [switchover, { firstRunInitUtc: "2027-01-01T00:00:00Z", grid: fine } as const],
+      gridChanges: [
+        switchover,
+        { id: "test_fine", firstRunInitUtc: "2027-01-01T00:00:00Z", grid: fine } as const,
+      ],
     };
     expect(gridAt(model, new Date("2026-12-15T00:00:00Z"))).toBeNull();
     expect(gridAt(model, new Date("2027-01-01T00:00:00Z"))).toBe(fine);
@@ -85,9 +93,9 @@ describe("gridAt", () => {
 });
 
 describe("gridPeriodAt", () => {
-  it("puts runs before any change in period 0, since the first run", () => {
+  it("puts runs before any change in the initial period, since the first run", () => {
     expect(gridPeriodAt(switched, new Date("2026-11-29T21:00:00Z"))).toEqual({
-      index: 0,
+      id: "initial",
       since: "first_run",
       grid: coarse,
     });
@@ -95,18 +103,21 @@ describe("gridPeriodAt", () => {
 
   it("opens a distinct period at a change even when the new grid is unknown", () => {
     expect(gridPeriodAt(switched, new Date("2026-11-30T00:00:00Z"))).toEqual({
-      index: 1,
+      id: "test_native",
       since: "2026-11-30T00:00:00Z",
       grid: null,
     });
   });
 
-  it("numbers successive periods in order", () => {
+  it("names each period by its change id, whatever its position", () => {
     const model = {
       grid: coarse,
-      gridChanges: [switchover, { firstRunInitUtc: "2027-01-01T00:00:00Z", grid: fine } as const],
+      gridChanges: [
+        switchover,
+        { id: "test_fine", firstRunInitUtc: "2027-01-01T00:00:00Z", grid: fine } as const,
+      ],
     };
-    expect(gridPeriodAt(model, new Date("2027-02-01T00:00:00Z")).index).toBe(2);
+    expect(gridPeriodAt(model, new Date("2027-02-01T00:00:00Z")).id).toBe("test_fine");
   });
 
   it("rejects an invalid date", () => {
@@ -132,5 +143,15 @@ describe("countIndependentVotes", () => {
         of("meteo_france_arome", "ecmwf_ifs", "meteo_france_arome", "noaa_gfs"),
       ),
     ).toBe(3);
+  });
+});
+
+describe("gustWindowOf", () => {
+  it("returns the model's own gust window", () => {
+    expect(gustWindowOf({ gustWindowHours: 3 })).toBe(3);
+  });
+
+  it("returns null, never the 1 h variable default, when the window is unknown", () => {
+    expect(gustWindowOf({ gustWindowHours: null })).toBeNull();
   });
 });

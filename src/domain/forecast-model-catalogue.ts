@@ -26,9 +26,18 @@ export type ForecastModelCatalogue = {
 /**
  * Last lead, in hours, of a run described by the Open-Meteo metadata API. `data_end_time` is the
  * first hour after the last step: for the 09 UTC AROME run of 09/11/2026 it gives 52 h after
- * initialisation while Météo-France publishes leads up to 51 h (see `aromeHorizon`).
+ * initialisation while Météo-France publishes leads up to 51 h (see `aromeHorizon`). Internal to
+ * the catalogue (not exported by the package); a `RangeError` is a programmer error.
  */
 export function lastLeadFromDataEnd(initUnixSeconds: number, dataEndUnixSeconds: number): number {
+  const whole = (seconds: number) => Number.isInteger(seconds / 3600);
+  if (
+    !whole(initUnixSeconds) ||
+    !whole(dataEndUnixSeconds) ||
+    dataEndUnixSeconds <= initUnixSeconds
+  ) {
+    throw new RangeError("Metadata times must be whole hours with the end after the start");
+  }
   return (dataEndUnixSeconds - initUnixSeconds) / 3600 - 1;
 }
 
@@ -181,7 +190,9 @@ export const forecastModelCatalogue: ForecastModelCatalogue = deepFreeze({
     // (Discontinued 2026-11-30) ». « After 30 November » reads either as the first run of 30/11
     // 00 UTC (the « Discontinued 2026-11-30 » date) or of 01/12 00 UTC: first run on the native
     // grid à vérifier, taken as 30/11/2026 00 UTC. Native grid à vérifier (collector#2 fixture).
-    gridChanges: [{ firstRunInitUtc: "2026-11-30T00:00:00Z", grid: null }],
+    gridChanges: [
+      { id: "icon_eu_native_2026", firstRunInitUtc: "2026-11-30T00:00:00Z", grid: null },
+    ],
     // meta.json `dwd_icon_eu` (09/11/2026): last run 09 UTC, update_interval_seconds 10800
     // horizon per cycle à vérifier: https://open-meteo.com/en/docs/dwd-api
     cycles: cyclesEvery(3, unknownHorizon),

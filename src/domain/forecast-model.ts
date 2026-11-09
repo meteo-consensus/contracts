@@ -67,15 +67,26 @@ export type Grid =
     }
   | { readonly kind: "reduced_gaussian"; readonly label: string; readonly approxKm: number };
 
-/** ISO 8601 instant written in UTC with a `Z` suffix, never with an offset. */
+/** ISO 8601 instant written in UTC to the second with a `Z` suffix, never with an offset. */
 export type UtcInstant = `${string}Z`;
+
+/** Validates a `UtcInstant` (`2026-11-30T00:00:00Z`): no offset, no fraction, no local time. */
+export const UtcInstantSchema = z.iso.datetime({ precision: 0 });
 
 /**
  * A dated grid change. A grid applies by run initialisation time: every lead of a run comes from
  * the grid in effect when that run was initialised, even leads valid after the change.
  */
 export interface GridChange {
-  /** Initialisation time of the first run on the new grid. */
+  /**
+   * Stable id of the grid period this change opens (`"initial"` is reserved for the base grid).
+   * Scores are keyed on it: it never changes, even if `firstRunInitUtc` is corrected.
+   */
+  readonly id: string;
+  /**
+   * Initialisation time of the first run on the new grid. Correcting it moves runs between
+   * periods: it is a re-scoring event for the affected runs.
+   */
   readonly firstRunInitUtc: UtcInstant;
   /** The new grid; `null` while it is not known (« à vérifier »). */
   readonly grid: Grid | null;
@@ -139,15 +150,18 @@ export interface ForecastModelDefinition<Id extends ForecastModelId = ForecastMo
   /** Daily runs in ascending UTC hour. */
   readonly cycles: readonly RunCycle[];
   /**
-   * Lead times collected (owner decision, 09/11/2026: 72 h). The effective cap of a run is the
-   * smaller of this value and its cycle horizon.
+   * Lead times collected (owner decision, 09/11/2026: 72 h; a number, not a literal, so raising
+   * the cap is not a breaking change). The effective cap of a run is the smaller of this value
+   * and its cycle horizon. When the cycle horizon is unknown, so is the effective cap:
+   * completeness is measured on the leads actually received, never against an assumed 72 h.
    */
   readonly horizonCollectedHours: number;
   readonly nativeSteps: readonly StepRange[];
   /**
-   * Hours covered by one `wind_gusts_10m` value of this model (its preceding-max window); `null`
-   * if unknown. It overrides the variable's catalogue semantics (`max_preceding_1h`), which is the
-   * default. One window per model is valid only within the 72 h cap: past it, native steps change.
+   * Hours covered by one `wind_gusts_10m` value of this model (its preceding-max window). It
+   * overrides the variable's catalogue semantics (`max_preceding_1h`). `null` means the window is
+   * unknown: no gust pairing for this model (« données insuffisantes »), never the 1 h default.
+   * One window per model is valid only within the 72 h cap: past it, native steps change.
    */
   readonly gustWindowHours: number | null;
   /** Catalogued variables this model does not provide; `null` when not known (« à vérifier »). */

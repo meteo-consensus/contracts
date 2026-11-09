@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { forecastModelIds } from "./forecast-model.ts";
+import { forecastModelIds, UtcInstantSchema } from "./forecast-model.ts";
 import { forecastModelCatalogue, lastLeadFromDataEnd } from "./forecast-model-catalogue.ts";
 import {
   countIndependentVotes,
   gridAt,
   gridPeriodAt,
+  gustWindowOf,
   nativeStepAt,
 } from "./forecast-model-queries.ts";
 import { openMeteoAttribution } from "./forecast-providers.ts";
@@ -64,6 +65,15 @@ describe("forecast model catalogue", () => {
   });
 
   it.each([
+    { init: 1794214800, end: 1794214800 },
+    { init: 1794214800, end: 1794211200 },
+    { init: 1794214800, end: 1794402030 },
+    { init: 1794214801, end: 1794402000 },
+  ])("rejects metadata init $init and end $end", ({ init, end }) => {
+    expect(() => lastLeadFromDataEnd(init, end)).toThrow(RangeError);
+  });
+
+  it.each([
     { id: "arome_france", observed: [9] },
     { id: "arome_france_hd", observed: [6, 9] },
   ] as const)("gives $id a +51 h horizon, observed at $observed UTC", ({ id, observed }) => {
@@ -110,7 +120,7 @@ describe("forecast model catalogue", () => {
     { id: "icon_eu", window: 1 },
     { id: "gfs", window: null },
   ] as const)("gives $id a gust window of $window h", ({ id, window }) => {
-    expect(forecastModelCatalogue[id].gustWindowHours).toBe(window);
+    expect(gustWindowOf(forecastModelCatalogue[id])).toBe(window);
   });
 
   it("keeps the 0.0625° grid for the ICON-EU run of 29/11 21 UTC, all leads included", () => {
@@ -125,8 +135,9 @@ describe("forecast model catalogue", () => {
 
   it("opens a new ICON-EU grid period, grid unknown, from the run of 30/11 00 UTC", () => {
     const iconEu = forecastModelCatalogue.icon_eu;
+    expect(gridPeriodAt(iconEu, new Date("2026-11-29T21:00:00Z")).id).toBe("initial");
     expect(gridPeriodAt(iconEu, new Date("2026-11-30T00:00:00Z"))).toEqual({
-      index: 1,
+      id: "icon_eu_native_2026",
       since: "2026-11-30T00:00:00Z",
       grid: null,
     });
@@ -139,14 +150,16 @@ describe("forecast model catalogue", () => {
     }
   });
 
-  it("writes grid changes as ascending UTC instants without offset", () => {
+  it("writes grid changes as strictly ascending UTC instants, with unique stable ids", () => {
     for (const model of models) {
-      const instants = model.gridChanges.map(({ firstRunInitUtc }) => firstRunInitUtc);
-      for (const instant of instants) {
-        expect(instant).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
-        expect(new Date(instant).toISOString()).toBe(instant.replace("Z", ".000Z"));
+      const times = model.gridChanges.map(({ firstRunInitUtc }) =>
+        Date.parse(UtcInstantSchema.parse(firstRunInitUtc)),
+      );
+      for (const [position, time] of times.entries()) {
+        expect(time).toBeGreaterThan(times[position - 1] ?? Number.NEGATIVE_INFINITY);
       }
-      expect(instants).toEqual([...instants].sort());
+      const ids = model.gridChanges.map(({ id }) => id);
+      expect(new Set([...ids, "initial"]).size).toBe(ids.length + 1);
     }
   });
 

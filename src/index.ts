@@ -21,6 +21,7 @@ export {
   ProviderIdSchema,
   providerFamilies,
   providerIds,
+  UtcInstantSchema,
 } from "./domain/forecast-model.ts";
 export type { ForecastModelCatalogue } from "./domain/forecast-model-catalogue.ts";
 export { forecastModelCatalogue } from "./domain/forecast-model-catalogue.ts";
@@ -29,6 +30,7 @@ export {
   countIndependentVotes,
   gridAt,
   gridPeriodAt,
+  gustWindowOf,
   nativeStepAt,
 } from "./domain/forecast-model-queries.ts";
 export { openMeteoAttribution } from "./domain/forecast-providers.ts";
