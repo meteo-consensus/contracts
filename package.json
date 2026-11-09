@@ -5,17 +5,21 @@
   "license": "UNLICENSED",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "files": [
-    "src",
-    "!src/**/*.test.ts"
+    "dist"
   ],
   "engines": {
     "node": ">=26.13.0"
   },
   "packageManager": "pnpm@12.17.0",
   "scripts": {
+    "build": "node --eval \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc --project tsconfig.build.json",
+    "prepack": "pnpm run build",
     "check": "pnpm run lint && pnpm run typecheck && pnpm run test:coverage && pnpm run audit",
     "lint": "biome ci .",
     "format": "biome check --write .",
@@ -24,7 +28,7 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "audit": "pnpm audit --audit-level high",
-    "unused": "knip"
+    "unused": "knip --tsConfig tsconfig.build.json"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.4",
