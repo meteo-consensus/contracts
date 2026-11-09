@@ -13,6 +13,15 @@ pnpm install --frozen-lockfile
 pnpm run check
 ```
 
+### Build and published files
+
+The package is published compiled (factory ADR 0001, amendment of 09/11/2026), with the same layout as `@meteo-consensus/db`: Node.js refuses to strip types under `node_modules`, so `exports` (`types` then `default`) points at `dist/`, never at `src/`. The package has one entry, the root `@meteo-consensus/contracts` (`dist/index.js`, `dist/index.d.ts`).
+
+- `pnpm run build` empties `dist/` and runs `tsc --project tsconfig.build.json`: `tsconfig.json` with emit on, `declaration`, `rootDir: src`, `outDir: dist`, tests excluded. Relative `.ts` imports become `.js` (`rewriteRelativeImportExtensions`). `dist/` is ignored by Git.
+- `prepack` runs the build, so `pnpm pack` and `pnpm publish` (release workflow) always ship a fresh `dist/`.
+- `files: ["dist"]`: the tarball holds `package.json`, `README.md` and `dist/` only. No source, test or type test is shipped. pnpm does not pack `CHANGELOG.md` with this `files` list (checked with pnpm 12.17.0); if a pnpm upgrade starts packing it, the tarball test fails before publishing.
+- `test/packed-package.test.ts` packs the package with `pnpm pack`, unpacks it into a bare project, imports the root entry with Node's type stripping off (`--no-strip-types`) and compares its exports with `src/index.ts`, and type-checks a consumer against the shipped declarations (`skipLibCheck: false`). It calls the pnpm that runs it (`npm_execpath`), so run the suite through `pnpm run check` or `pnpm test`, not `npx vitest`: without pnpm it stops with an explicit error.
+
 ## Variable catalogue
 
 `variableCatalogue` lists the eight collected variables. Ids follow the Open-Meteo forecast API names (checked on https://open-meteo.com/en/docs, 09/11/2026) and never change once released: `VariableId` is their literal union and `VariableIdSchema` rejects any other id.
