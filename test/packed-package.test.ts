@@ -109,6 +109,14 @@ describe("packed package", () => {
     );
   });
 
+  it("leaves zod to the consumer as a peer, in the range of the version it is built with", () => {
+    const sourceJson: unknown = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+    const built = z.object({ devDependencies: z.object({ zod: z.string() }) }).parse(sourceJson);
+    const { dependencies: runtime, peerDependencies: peers } = installedManifest();
+    expect(runtime).not.toHaveProperty("zod");
+    expect(peers).toEqual({ zod: `^${built.devDependencies.zod}` });
+  });
+
   it("resolves the root entry to compiled JavaScript and its declarations, types first", () => {
     const { exports } = installedManifest();
     expect(exports).toEqual({

@@ -4,6 +4,16 @@ Contrat public : OpenAPI, schémas Zod et types partagés (modèles, variables, 
 
 Part of [meteo-consensus](https://github.com/meteo-consensus): the weather API that crosses forecast models and learns which one is reliable where.
 
+## Installation
+
+`zod` is a peer dependency: the package does not bring its own copy. Install it yourself, in a version within the peer range declared in `package.json` (`peerDependencies.zod`), next to `@meteo-consensus/contracts`:
+
+```sh
+pnpm add @meteo-consensus/contracts zod
+```
+
+A single `zod` copy in the consumer keeps the schemas from this package and the consumer's own schemas compatible (`instanceof` checks, schema types). With two copies, a schema built by one is not recognised by the other.
+
 ## Development
 
 Requirements: Node.js (version in `.node-version`) and pnpm (version in `package.json`, `packageManager`).
