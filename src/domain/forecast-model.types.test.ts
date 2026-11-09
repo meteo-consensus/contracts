@@ -8,7 +8,7 @@ describe("forecast model catalogue types", () => {
     expectTypeOf(forecastModelCatalogue.gfs).toEqualTypeOf<ForecastModelDefinition<"gfs">>();
   });
 
-  it("caps the collected horizon at 72 hours in the type", () => {
-    expectTypeOf(forecastModelCatalogue.ecmwf_ifs.horizonCollectedHours).toEqualTypeOf<72>();
+  it("types the collected horizon as a number of hours", () => {
+    expectTypeOf(forecastModelCatalogue.ecmwf_ifs.horizonCollectedHours).toEqualTypeOf<number>();
   });
 });

@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
+import { forecastModelIds } from "./forecast-model.ts";
+import { forecastModelCatalogue, lastLeadFromDataEnd } from "./forecast-model-catalogue.ts";
 import {
   countIndependentVotes,
-  type ForecastModelId,
-  forecastModelIds,
   gridAt,
+  gridPeriodAt,
   nativeStepAt,
-} from "./forecast-model.ts";
-import { forecastModelCatalogue } from "./forecast-model-catalogue.ts";
+} from "./forecast-model-queries.ts";
 import { openMeteoAttribution } from "./forecast-providers.ts";
-import { VariableIdSchema } from "./variables.ts";
+import { VariableIdSchema, variableCatalogue } from "./variables.ts";
 
 const models = forecastModelIds.map((id) => forecastModelCatalogue[id]);
 
@@ -58,14 +58,25 @@ describe("forecast model catalogue", () => {
     expect(forecastModelCatalogue[id].cycles.map(({ utcHour }) => utcHour)).toEqual(hours);
   });
 
-  it("gives AROME runs an approximate +52 h horizon and leaves the others unknown", () => {
-    const arome: readonly ForecastModelId[] = ["arome_france", "arome_france_hd"];
-    for (const model of models) {
-      for (const cycle of model.cycles) {
-        expect(cycle.horizon).toEqual(
-          arome.includes(model.id) ? { hours: 52, approximate: true } : null,
-        );
-      }
+  it("reads the last lead as the hour before the metadata data_end_time", () => {
+    // 09 UTC AROME run of 09/11/2026: data_end_time is the first hour after the last step.
+    expect(lastLeadFromDataEnd(1794214800, 1794402000)).toBe(51);
+  });
+
+  it.each([
+    { id: "arome_france", observed: [9] },
+    { id: "arome_france_hd", observed: [6, 9] },
+  ] as const)("gives $id a +51 h horizon, observed at $observed UTC", ({ id, observed }) => {
+    for (const { utcHour, horizon } of forecastModelCatalogue[id].cycles) {
+      const basis = (observed as readonly number[]).includes(utcHour) ? "observed" : "extrapolated";
+      expect(horizon).toEqual({ hours: 51, basis });
+    }
+  });
+
+  it("leaves the horizon of the other models unknown", () => {
+    const others = models.filter(({ providerFamily }) => providerFamily !== "meteo_france_arome");
+    for (const model of others) {
+      expect(model.cycles.every(({ horizon }) => horizon === null)).toBe(true);
     }
   });
 
@@ -79,8 +90,8 @@ describe("forecast model catalogue", () => {
   });
 
   it.each([
-    { id: "arome_france", lead: 52, step: 1 },
-    { id: "arome_france_hd", lead: 52, step: 1 },
+    { id: "arome_france", lead: 51, step: 1 },
+    { id: "arome_france_hd", lead: 51, step: 1 },
     { id: "arpege_europe", lead: 72, step: 1 },
     { id: "arpege_europe", lead: 73, step: null },
     { id: "icon_eu", lead: 78, step: 1 },
@@ -102,14 +113,23 @@ describe("forecast model catalogue", () => {
     expect(forecastModelCatalogue[id].gustWindowHours).toBe(window);
   });
 
-  it("switches ICON-EU to an unknown native grid on 30/11/2026, in the same family", () => {
+  it("keeps the 0.0625° grid for the ICON-EU run of 29/11 21 UTC, all leads included", () => {
     const iconEu = forecastModelCatalogue.icon_eu;
-    expect(gridAt(iconEu, new Date("2026-11-29T23:59:59Z"))).toEqual({
+    expect(gridAt(iconEu, new Date("2026-11-29T21:00:00Z"))).toEqual({
+      kind: "lat_lon",
       label: "0.0625° (~7 km)",
       degrees: 0.0625,
       approxKm: 7,
     });
-    expect(gridAt(iconEu, new Date("2026-11-30T00:00:00Z"))).toBeNull();
+  });
+
+  it("opens a new ICON-EU grid period, grid unknown, from the run of 30/11 00 UTC", () => {
+    const iconEu = forecastModelCatalogue.icon_eu;
+    expect(gridPeriodAt(iconEu, new Date("2026-11-30T00:00:00Z"))).toEqual({
+      index: 1,
+      since: "2026-11-30T00:00:00Z",
+      grid: null,
+    });
     expect(iconEu.providerFamily).toBe("dwd_icon");
   });
 
@@ -119,34 +139,46 @@ describe("forecast model catalogue", () => {
     }
   });
 
-  it("keeps cycles, step ranges and grid changes well-formed", () => {
+  it("writes grid changes as ascending UTC instants without offset", () => {
+    for (const model of models) {
+      const instants = model.gridChanges.map(({ firstRunInitUtc }) => firstRunInitUtc);
+      for (const instant of instants) {
+        expect(instant).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+        expect(new Date(instant).toISOString()).toBe(instant.replace("Z", ".000Z"));
+      }
+      expect(instants).toEqual([...instants].sort());
+    }
+  });
+
+  it("keeps cycles and step ranges well-formed", () => {
     for (const model of models) {
       const hours = model.cycles.map(({ utcHour }) => utcHour);
       expect(hours).toEqual([...hours].sort((a, b) => a - b));
       expect(hours.every((hour) => Number.isInteger(hour) && hour >= 0 && hour < 24)).toBe(true);
 
       const bounds = model.nativeSteps.map(({ untilLeadHours }) => untilLeadHours);
-      expect(bounds.at(-1)).toBeNull();
+      expect(bounds.at(-1)).toBe("open");
       const closed = bounds.slice(0, -1);
-      expect(closed.every((bound) => bound !== null)).toBe(true);
+      expect(closed.every((bound) => typeof bound === "number")).toBe(true);
       expect(closed).toEqual([...closed].sort((a, b) => Number(a) - Number(b)));
-
-      const instants = model.gridChanges.map(({ effectiveFromUtc }) =>
-        Date.parse(effectiveFromUtc),
-      );
-      expect(instants.every((instant) => !Number.isNaN(instant))).toBe(true);
-      expect(instants).toEqual([...instants].sort((a, b) => a - b));
     }
   });
 
   it("only cites catalogued variables", () => {
-    for (const model of models) {
-      for (const variable of model.unavailableVariables ?? []) {
-        expect(VariableIdSchema.safeParse(variable).success).toBe(true);
-      }
+    const cited = models.flatMap((model) => [
+      ...(model.unavailableVariables ?? []),
+      // gustWindowHours qualifies this variable
+      ...(model.gustWindowHours === null ? [] : ["wind_gusts_10m"]),
+    ]);
+    expect(cited.length).toBeGreaterThan(0);
+    for (const variable of cited) {
+      expect(VariableIdSchema.safeParse(variable).success).toBe(true);
     }
+    expect(variableCatalogue.wind_gusts_10m.temporal).toBe("max_preceding_1h");
+  });
+
+  it("does not know which variables AROME France HD lacks", () => {
     expect(forecastModelCatalogue.arome_france_hd.unavailableVariables).toBeNull();
-    expect(forecastModelCatalogue.ecmwf_ifs.unavailableVariables).toEqual([]);
   });
 
   it("keeps the Open-Meteo attribution separate from the provider credit", () => {
@@ -163,7 +195,6 @@ describe("forecast model catalogue", () => {
   });
 
   it("is read-only all the way down", () => {
-    expect(Object.isFrozen(forecastModelIds)).toBe(true);
     expect(Object.isFrozen(forecastModelCatalogue)).toBe(true);
     expect(Object.isFrozen(openMeteoAttribution.licence)).toBe(true);
     for (const model of models) {

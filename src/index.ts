@@ -12,16 +12,25 @@ export type {
   ProviderId,
   RunCycle,
   StepRange,
+  UtcInstant,
 } from "./domain/forecast-model.ts";
 export {
-  countIndependentVotes,
   ForecastModelIdSchema,
   forecastModelIds,
-  gridAt,
-  nativeStepAt,
+  ProviderFamilySchema,
+  ProviderIdSchema,
+  providerFamilies,
+  providerIds,
 } from "./domain/forecast-model.ts";
 export type { ForecastModelCatalogue } from "./domain/forecast-model-catalogue.ts";
 export { forecastModelCatalogue } from "./domain/forecast-model-catalogue.ts";
+export type { GridPeriod } from "./domain/forecast-model-queries.ts";
+export {
+  countIndependentVotes,
+  gridAt,
+  gridPeriodAt,
+  nativeStepAt,
+} from "./domain/forecast-model-queries.ts";
 export { openMeteoAttribution } from "./domain/forecast-providers.ts";
 export type {
   CanonicalUnit,

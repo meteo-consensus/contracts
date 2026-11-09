@@ -1,10 +1,17 @@
 import { z } from "zod";
 import type { VariableId } from "./variables.ts";
 
+/*
+ * Rule for the whole catalogue: `null` always means « unknown, à vérifier » (the source does not
+ * give the value, or the owner has not decided it). It never means « not applicable »: that case
+ * gets its own literal (`"open"`, `"first_run"`) or variant (`Grid["kind"]`).
+ */
+
 /**
  * Internal ids of the collected forecast models. They are part of the public contract and are
  * not the Open-Meteo `models=` ids (that mapping lives in collector): never rename one, add a
- * new id instead. `icon_eu` covers ICON-EU before and after its switch to the native grid.
+ * new id instead (a minor release with a changelog note). `icon_eu` covers ICON-EU before and
+ * after its switch to the native grid.
  */
 export const forecastModelIds = Object.freeze([
   "arome_france",
@@ -19,49 +26,78 @@ export type ForecastModelId = (typeof forecastModelIds)[number];
 
 export const ForecastModelIdSchema = z.enum(forecastModelIds);
 
-/** The organisation that runs the model and owns its data. */
-export type ProviderId = "meteo_france" | "ecmwf" | "dwd" | "noaa_ncep";
+/** The organisations that run the models and own their data. */
+export const providerIds = Object.freeze(["meteo_france", "ecmwf", "dwd", "noaa_ncep"] as const);
+
+export type ProviderId = (typeof providerIds)[number];
+
+export const ProviderIdSchema = z.enum(providerIds);
 
 /**
  * Models of one family share their dynamics and physics, so their errors are correlated: they
- * count as one independent vote in a consensus (AROME France and AROME France HD). A grid change
- * never changes the family.
+ * count as one independent vote in a consensus. AROME France and AROME France HD are the same
+ * run on two output grids, never two opinions. A grid change never changes the family.
+ *
+ * AROME and ARPEGE are separate families, but their independence is only partial: AROME takes its
+ * lateral boundary conditions from ARPEGE (citation à vérifier). The owner confirms this split
+ * (5 independent votes for 6 models, against 4 if they were merged) before release 0.1.0.
  */
-export type ProviderFamily =
-  | "meteo_france_arome"
-  | "meteo_france_arpege"
-  | "ecmwf_ifs"
-  | "dwd_icon"
-  | "noaa_gfs";
+export const providerFamilies = Object.freeze([
+  "meteo_france_arome",
+  "meteo_france_arpege",
+  "ecmwf_ifs",
+  "dwd_icon",
+  "noaa_gfs",
+] as const);
 
-/** Horizontal grid as stated by the source. `degrees` is `null` for non lat-lon grids. */
-export interface Grid {
-  readonly label: string;
-  readonly degrees: number | null;
-  readonly approxKm: number | null;
-}
+export type ProviderFamily = (typeof providerFamilies)[number];
 
-/** A dated grid change. `grid: null` means the new grid is not known yet (« à vérifier »). */
+export const ProviderFamilySchema = z.enum(providerFamilies);
+
+/**
+ * Horizontal grid as labelled by the source; `approxKm` is the source's own approximate figure.
+ * A reduced Gaussian grid has no single spacing in degrees.
+ */
+export type Grid =
+  | {
+      readonly kind: "lat_lon";
+      readonly label: string;
+      readonly degrees: number;
+      readonly approxKm: number;
+    }
+  | { readonly kind: "reduced_gaussian"; readonly label: string; readonly approxKm: number };
+
+/** ISO 8601 instant written in UTC with a `Z` suffix, never with an offset. */
+export type UtcInstant = `${string}Z`;
+
+/**
+ * A dated grid change. A grid applies by run initialisation time: every lead of a run comes from
+ * the grid in effect when that run was initialised, even leads valid after the change.
+ */
 export interface GridChange {
-  /** ISO 8601 instant in UTC from which the new grid applies. */
-  readonly effectiveFromUtc: string;
+  /** Initialisation time of the first run on the new grid. */
+  readonly firstRunInitUtc: UtcInstant;
+  /** The new grid; `null` while it is not known (« à vérifier »). */
   readonly grid: Grid | null;
 }
 
 /**
  * One range of lead times sharing a native time step. Ranges are ordered and contiguous from
- * lead 0; `untilLeadHours` is the inclusive upper bound, `null` for the last, open-ended range.
+ * lead 0; `untilLeadHours` is the inclusive upper bound, `"open"` for the last range.
  * `stepHours: null` means the step is not known (« à vérifier »).
  */
 export interface StepRange {
-  readonly untilLeadHours: number | null;
+  readonly untilLeadHours: number | "open";
   readonly stepHours: number | null;
 }
 
-/** Forecast length of one run. `approximate` is true when the source gives an approximate value. */
+/**
+ * Forecast length of one run, in hours (last lead). `basis` says whether this cycle's horizon was
+ * observed at a source, or extrapolated from the observed cycles of the same model.
+ */
 export interface Horizon {
   readonly hours: number;
-  readonly approximate: boolean;
+  readonly basis: "observed" | "extrapolated";
 }
 
 /** One daily run, by its initialisation hour in UTC. `horizon: null` means « à vérifier ». */
@@ -96,57 +132,25 @@ export interface ForecastModelDefinition<Id extends ForecastModelId = ForecastMo
   readonly label: string;
   readonly provider: Provider;
   readonly providerFamily: ProviderFamily;
-  /** Grid in effect before the first entry of `gridChanges`. */
+  /** Grid of the runs initialised before the first entry of `gridChanges`. */
   readonly grid: Grid;
   /** Dated grid changes in ascending order; empty when the grid never changed. */
   readonly gridChanges: readonly GridChange[];
   /** Daily runs in ascending UTC hour. */
   readonly cycles: readonly RunCycle[];
-  /** Lead times collected, capped for every model (owner decision, 09/11/2026). */
-  readonly horizonCollectedHours: 72;
+  /**
+   * Lead times collected (owner decision, 09/11/2026: 72 h). The effective cap of a run is the
+   * smaller of this value and its cycle horizon.
+   */
+  readonly horizonCollectedHours: number;
   readonly nativeSteps: readonly StepRange[];
-  /** Hours covered by one `wind_gusts_10m` value (its preceding-max window); `null` if unknown. */
+  /**
+   * Hours covered by one `wind_gusts_10m` value of this model (its preceding-max window); `null`
+   * if unknown. It overrides the variable's catalogue semantics (`max_preceding_1h`), which is the
+   * default. One window per model is valid only within the 72 h cap: past it, native steps change.
+   */
   readonly gustWindowHours: number | null;
   /** Catalogued variables this model does not provide; `null` when not known (« à vérifier »). */
   readonly unavailableVariables: readonly VariableId[] | null;
   readonly distributorAttribution: DistributorAttribution;
-}
-
-/** Native time step at a lead time, in hours, or `null` when the source does not give it. */
-export function nativeStepAt(
-  model: Pick<ForecastModelDefinition, "nativeSteps">,
-  leadHours: number,
-): number | null {
-  if (!Number.isFinite(leadHours) || leadHours < 0) {
-    throw new RangeError(`Lead time must be a finite number of hours >= 0, got ${leadHours}`);
-  }
-  const range = model.nativeSteps.find(
-    ({ untilLeadHours }) => untilLeadHours === null || leadHours <= untilLeadHours,
-  );
-  return range?.stepHours ?? null;
-}
-
-/** Grid in effect at `at`, or `null` when that grid is not known yet. */
-export function gridAt(
-  model: Pick<ForecastModelDefinition, "grid" | "gridChanges">,
-  at: Date,
-): Grid | null {
-  const time = at.getTime();
-  if (Number.isNaN(time)) {
-    throw new RangeError("Invalid date");
-  }
-  let grid: Grid | null = model.grid;
-  for (const change of model.gridChanges) {
-    if (Date.parse(change.effectiveFromUtc) <= time) {
-      grid = change.grid;
-    }
-  }
-  return grid;
-}
-
-/** Number of independent votes among `models`: one per distinct provider family. */
-export function countIndependentVotes(
-  models: readonly Pick<ForecastModelDefinition, "providerFamily">[],
-): number {
-  return new Set(models.map(({ providerFamily }) => providerFamily)).size;
 }

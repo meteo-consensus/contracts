@@ -107,6 +107,10 @@ export const variableCatalogue: VariableCatalogue = Object.freeze({
     bounds: { min: 0, max: 360 },
     temporal: "instant",
   }),
+  /**
+   * `max_preceding_1h` is the default window. A forecast model's `gustWindowHours` overrides it
+   * (3 h for ECMWF IFS): see the forecast model catalogue.
+   */
   wind_gusts_10m: define({
     id: "wind_gusts_10m",
     unit: "m/s",
