@@ -2,6 +2,7 @@
 export type {
   CanonicalUnit,
   TemporalSemantics,
+  VariableCatalogue,
   VariableDefinition,
   VariableId,
 } from "./domain/variables.ts";

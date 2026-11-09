@@ -20,7 +20,10 @@ export type VariableId = (typeof variableIds)[number];
 
 export const VariableIdSchema = z.enum(variableIds);
 
-/** What a timestamped value covers: the instant itself or the period preceding it. */
+/**
+ * What a timestamped value covers: the instant itself or the period ending at it.
+ * `mean_preceding_10min` is for observations (station wind is a 10-minute mean).
+ */
 export const TemporalSemanticsSchema = z.enum([
   "instant",
   "sum_preceding_1h",
@@ -33,17 +36,29 @@ export type TemporalSemantics = z.infer<typeof TemporalSemanticsSchema>;
 /** Canonical units: every value stored or served is in its variable's unit. */
 export type CanonicalUnit = "°C" | "%" | "mm" | "m/s" | "°" | "hPa";
 
-export interface VariableDefinition {
-  readonly id: VariableId;
+export interface VariableDefinition<Id extends VariableId = VariableId> {
+  readonly id: Id;
   readonly unit: CanonicalUnit;
-  /** Height above ground in metres; `null` when no height applies (sea level, whole column). */
+  /**
+   * Height above ground in metres. `0` means the surface (`precipitation`). `null` means no
+   * height above ground applies, for one of two reasons: the value is reduced to mean sea
+   * level (`pressure_msl`), or it describes the whole atmospheric column (`cloud_cover`).
+   */
   readonly heightM: number | null;
   /** Closed interval of physically plausible values, in the canonical unit. */
   readonly bounds: { readonly min: number; readonly max: number };
+  /**
+   * Semantics of the canonical forecast value at a timestamp. Observations carry their own
+   * semantics in the observation schema, which is why `TemporalSemantics` also lists
+   * `mean_preceding_10min`: station wind speed is reported as a 10-minute mean, while no
+   * forecast variable here uses it.
+   */
   readonly temporal: TemporalSemantics;
 }
 
-function define(definition: VariableDefinition): VariableDefinition {
+export type VariableCatalogue = { readonly [K in VariableId]: VariableDefinition<K> };
+
+function define<Id extends VariableId>(definition: VariableDefinition<Id>): VariableDefinition<Id> {
   return Object.freeze({ ...definition, bounds: Object.freeze({ ...definition.bounds }) });
 }
 
@@ -51,7 +66,7 @@ function define(definition: VariableDefinition): VariableDefinition {
  * Bounds marked "plausibility" are deliberately wider than the observed world extremes:
  * they reject corrupt values (unit mix-ups, sentinels), not rare weather.
  */
-export const variableCatalogue: Readonly<Record<VariableId, VariableDefinition>> = Object.freeze({
+export const variableCatalogue: VariableCatalogue = Object.freeze({
   temperature_2m: define({
     id: "temperature_2m",
     unit: "°C",

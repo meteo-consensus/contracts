@@ -17,19 +17,11 @@ pnpm run check
 
 `variableCatalogue` lists the eight collected variables. Ids follow the Open-Meteo forecast API names (checked on https://open-meteo.com/en/docs, 09/11/2026) and never change once released: `VariableId` is their literal union and `VariableIdSchema` rejects any other id.
 
-| Id                     | Canonical unit | Height (m)       | Temporal semantics | Bounds      |
-| ---------------------- | -------------- | ---------------- | ------------------ | ----------- |
-| `temperature_2m`       | °C             | 2                | `instant`          | -100 to 70  |
-| `relative_humidity_2m` | %              | 2                | `instant`          | 0 to 100    |
-| `precipitation`        | mm             | 0                | `sum_preceding_1h` | 0 to 500    |
-| `wind_speed_10m`       | m/s            | 10               | `instant`          | 0 to 150    |
-| `wind_direction_10m`   | °              | 10               | `instant`          | 0 to 360    |
-| `wind_gusts_10m`       | m/s            | 10               | `max_preceding_1h` | 0 to 150    |
-| `cloud_cover`          | %              | none             | `instant`          | 0 to 100    |
-| `pressure_msl`         | hPa            | none (sea level) | `instant`          | 800 to 1100 |
+Each variable's canonical unit, height, temporal semantics and bounds are defined once, in [`src/domain/variables.ts`](src/domain/variables.ts) (`variableCatalogue`), and not repeated here so this page cannot drift from the code.
 
 - **Units**: every value stored or served is in its canonical unit. Wind is in m/s (Open-Meteo defaults to km/h: request `wind_speed_unit=ms`).
-- **Temporal semantics**: `instant` is the value at the timestamp; `sum_preceding_1h`, `max_preceding_1h` and `mean_preceding_10min` cover the period that ends at the timestamp.
+- **Temporal semantics**: of the canonical forecast value. `instant` is the value at the timestamp; `sum_preceding_1h` and `max_preceding_1h` cover the hour that ends at it. `mean_preceding_10min` is for observations (station wind is a 10-minute mean), which carry their own semantics.
+- **Height**: metres above ground. `0` is the surface; `null` means sea level (`pressure_msl`) or the whole column (`cloud_cover`).
 - **Bounds**: closed intervals. Humidity, cloud cover and direction are bounded by definition; the others are plausibility bounds, deliberately wider than observed world extremes, that catch corrupt values rather than rare weather.
 - **Missing values**: `variableValueSchema(id)` accepts a finite number within the bounds, or `null` for a missing value. A missing value is never 0.
 
