@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { providerIds } from "./forecast-model.ts";
-import { openMeteoAttribution, providers } from "./forecast-providers.ts";
+import { openMeteoApiHosts, openMeteoAttribution, providers } from "./forecast-providers.ts";
 
 describe("forecast providers", () => {
   it("defines every provider, keyed by its own id", () => {
@@ -84,5 +84,10 @@ describe("forecast providers", () => {
       }
       expect(Object.isFrozen(providers[id].licence)).toBe(true);
     }
+  });
+
+  it("lists the Open-Meteo API hosts read on its documentation, frozen", () => {
+    expect(openMeteoApiHosts).toEqual(["api.open-meteo.com", "customer-api.open-meteo.com"]);
+    expect(Object.isFrozen(openMeteoApiHosts)).toBe(true);
   });
 });

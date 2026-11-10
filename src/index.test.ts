@@ -43,6 +43,7 @@ describe("package entry", () => {
         "gridPeriodAt",
         "gustWindowOf",
         "nativeStepAt",
+        "openMeteoApiHosts",
         "openMeteoAttribution",
         "providerFamilies",
         "providerIds",

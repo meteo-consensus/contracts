@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { openMeteoApiHosts } from "./forecast-providers.ts";
 import { CellSelectionSchema, ForecastPointSchema, ForecastRunSchema } from "./forecast-run.ts";
 
 // Synthetic inputs, not real data.
@@ -60,6 +61,20 @@ describe("ForecastRunSchema", () => {
       expect(runAccepted({ ...run, sourceApi })).toBe(false);
     },
   );
+  it.each([...openMeteoApiHosts])("accepts the catalogued Open-Meteo host %s", (host) => {
+    expect(runAccepted({ ...run, sourceApi: `https://${host}/v1/forecast` })).toBe(true);
+  });
+
+  it.each([
+    "https://example.com/v1/forecast",
+    "https://open-meteo.com/v1/forecast",
+    "https://sub.api.open-meteo.com/v1/forecast",
+    "https://api.open-meteo.com.evil.example/v1/forecast",
+    "https://api.open-meteo.com:8443/v1/forecast",
+    "https://203.0.113.10/v1/forecast",
+  ])("rejects the source API %j: only a catalogued host may be named", (sourceApi) => {
+    expect(runAccepted({ ...run, sourceApi })).toBe(false);
+  });
 });
 
 describe("CellSelectionSchema", () => {
