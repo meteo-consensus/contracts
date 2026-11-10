@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/meteo-consensus/contracts/compare/v0.2.0...v0.2.1) (2026-11-10)
+
+
+### Documentation
+
+* record the run time order and the periodUnverified flip ([#33](https://github.com/meteo-consensus/contracts/issues/33)) ([fe8a29e](https://github.com/meteo-consensus/contracts/commit/fe8a29edefe85af312232b2aba5e8d1ff09a5db9)), closes [#15](https://github.com/meteo-consensus/contracts/issues/15)
+
 ## [0.2.0](https://github.com/meteo-consensus/contracts/compare/v0.1.1...v0.2.0) (2026-11-10)
 
 
