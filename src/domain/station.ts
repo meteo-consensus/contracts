@@ -17,6 +17,25 @@ export const StationNetworkSchema = z.enum(["meteo_france"]);
 export type StationNetwork = z.infer<typeof StationNetworkSchema>;
 
 /**
+ * Upper bound of a station name, in UTF-16 code units. The maximum length of BDClim
+ * `NOM_USUEL` is not documented in the sources read so far (« à vérifier »), so this is a
+ * generous bound that keeps a stored and served value small, not an upstream fact.
+ */
+export const STATION_NAME_MAX_LENGTH = 100;
+
+/**
+ * Station name (`NOM_USUEL`), stored and then served by `api` and `web`: 1 to
+ * {@link STATION_NAME_MAX_LENGTH} characters, no control character (C0, DEL, C1), no leading or
+ * trailing whitespace. The value is validated as is, never trimmed: cleaning is the caller's job.
+ */
+const StationNameSchema = z
+  .string()
+  .min(1)
+  .max(STATION_NAME_MAX_LENGTH)
+  .regex(/^\P{Cc}*$/u, "name must not contain control characters")
+  .regex(/^(?!\s)[\s\S]*(?<!\s)$/, "name must not start or end with whitespace");
+
+/**
  * One version of a station. A change of any attribute closes the current version
  * (`validTo`) and opens a new one; `validTo: null` marks the current version. The period is
  * `[validFrom, validTo[`.
@@ -24,7 +43,7 @@ export type StationNetwork = z.infer<typeof StationNetworkSchema>;
 export const StationSchema = z
   .strictObject({
     numPoste: NumPosteSchema,
-    name: z.string().min(1),
+    name: StationNameSchema,
     latitude: LatitudeSchema,
     longitude: LongitudeSchema,
     /** Elevation of the shelter, or of the rain gauge when there is no shelter (`ALTI`). */

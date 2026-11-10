@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { NumPosteSchema, StationNetworkSchema, StationSchema } from "./station.ts";
+import {
+  NumPosteSchema,
+  STATION_NAME_MAX_LENGTH,
+  StationNetworkSchema,
+  StationSchema,
+} from "./station.ts";
 
 // Synthetic input shaped like a BDClim row (NUM_POSTE, NOM_USUEL, LAT, LON, ALTI), not real data.
 const station = {
@@ -66,6 +71,38 @@ describe("StationSchema", () => {
     "rejects a version that ends at %s, not after it starts",
     (validTo) => {
       expect(StationSchema.safeParse({ ...station, validTo }).success).toBe(false);
+    },
+  );
+
+  // Synthetic names in the shape of real French place names, not BDClim extracts.
+  it.each([
+    "MARSEILLE-MARIGNANE",
+    "L'ÎLE-D'YEU",
+    "Saint-Étienne-de-Tinée",
+    "Montélimar – Ancône",
+    "A".repeat(STATION_NAME_MAX_LENGTH),
+  ])("accepts the name %j", (name) => {
+    expect(StationSchema.parse({ ...station, name }).name).toBe(name);
+  });
+
+  it("rejects a name longer than the maximum", () => {
+    const name = "A".repeat(STATION_NAME_MAX_LENGTH + 1);
+    expect(StationSchema.safeParse({ ...station, name }).success).toBe(false);
+  });
+
+  it.each(["\u0000", "\t", "\n", "\r", "\u001B", "\u001F", "\u007F", "\u0085"])(
+    "rejects a name with the control character %j",
+    (control) => {
+      expect(StationSchema.safeParse({ ...station, name: `STATION${control}TEST` }).success).toBe(
+        false,
+      );
+    },
+  );
+
+  it.each([" STATION", "STATION ", " STATION", "STATION ", " "])(
+    "rejects the name %j, which starts or ends with whitespace",
+    (name) => {
+      expect(StationSchema.safeParse({ ...station, name }).success).toBe(false);
     },
   );
 
