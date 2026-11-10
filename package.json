@@ -1,6 +1,6 @@
 {
   "name": "@meteo-consensus/contracts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Contrat public : OpenAPI, schémas Zod et types partagés (modèles, variables, unités, consensus). Paquet @meteo-consensus/contracts.",
   "license": "MIT",
   "type": "module",
