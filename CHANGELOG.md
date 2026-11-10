@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/meteo-consensus/contracts/compare/v0.1.0...v0.1.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* **schema:** tighten Station.name validation (100-character max, control characters and edge whitespace rejected) ([#28](https://github.com/meteo-consensus/contracts/issues/28)) ([d4832b1](https://github.com/meteo-consensus/contracts/commit/d4832b12f9fe90d4bf0df80d62cd7ecaec951b81)), closes [#13](https://github.com/meteo-consensus/contracts/issues/13)
+
 ## 0.1.0 (2026-11-09)
 
 
