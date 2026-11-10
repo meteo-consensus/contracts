@@ -36,7 +36,7 @@ export {
   gustWindowOf,
   nativeStepAt,
 } from "./domain/forecast-model-queries.ts";
-export { openMeteoAttribution } from "./domain/forecast-providers.ts";
+export { openMeteoApiHosts, openMeteoAttribution } from "./domain/forecast-providers.ts";
 export type { CellSelection, ForecastPoint, ForecastRun } from "./domain/forecast-run.ts";
 export {
   CellSelectionSchema,

@@ -14,6 +14,21 @@ export const openMeteoAttribution: DistributorAttribution = Object.freeze({
 });
 
 /**
+ * Open-Meteo API hosts a run may be fetched from: the only hosts `ForecastRun.sourceApi` may name.
+ * - `api.open-meteo.com`: the free API, https://open-meteo.com/en/docs (10/11/2026), whose request
+ *   form targets `https://api.open-meteo.com/v1/forecast`.
+ * - `customer-api.open-meteo.com`: the commercial API, https://open-meteo.com/en/pricing
+ *   (10/11/2026): « The customer endpoint is customer-api.open-meteo.com; requests include
+ *   &apikey=abc123 ». The key travels in the query string, which `sourceApi` rejects.
+ * A self-hosted endpoint (ADR 0003) is added here once its host is known: a new accepted value,
+ * so a minor release.
+ */
+export const openMeteoApiHosts = Object.freeze([
+  "api.open-meteo.com",
+  "customer-api.open-meteo.com",
+]);
+
+/**
  * Model providers. Names are those of https://open-meteo.com/en/licence (« Data Sources »,
  * 09/11/2026), which also links each provider's licence. Credits are each provider's own
  * required wording, checked on its pages the same day.

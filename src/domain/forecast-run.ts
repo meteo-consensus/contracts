@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ForecastModelIdSchema, UtcInstantSchema } from "./forecast-model.ts";
+import { openMeteoApiHosts } from "./forecast-providers.ts";
 import { ElevationMSchema, LatitudeSchema, LongitudeSchema } from "./geo.ts";
 import { hoursBetween } from "./instants.ts";
 import { NumPosteSchema } from "./station.ts";
@@ -7,12 +8,19 @@ import { isBareHttpsUrl } from "./urls.ts";
 
 /**
  * Endpoint that served the run (`https://api.open-meteo.com/v1/forecast`). Bare URL only: a
- * query string could carry an API key, so it is rejected rather than stored.
+ * query string could carry an API key, so it is rejected rather than stored. Its host, with no
+ * port, must be one of `openMeteoApiHosts`, so the value can only name a real source.
  */
 export const SourceApiSchema = z
   .string()
   .max(2048)
-  .refine(isBareHttpsUrl, "sourceApi must be an https URL with no credentials, query or fragment");
+  .refine(isBareHttpsUrl, "sourceApi must be an https URL with no credentials, query or fragment")
+  .refine(hasKnownHost, "sourceApi must name a catalogued Open-Meteo API host");
+
+function hasKnownHost(value: string): boolean {
+  const host = URL.parse(value)?.host;
+  return host !== undefined && openMeteoApiHosts.includes(host);
+}
 
 /**
  * One fetched run of a model. Times are UTC. `modificationTime` and `availabilityTime` are
