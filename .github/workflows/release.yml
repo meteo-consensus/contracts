@@ -1,5 +1,7 @@
-# Release PRs, tags and CHANGELOG.md from Conventional Commits (release-please).
-# Set `publish: true` only in repos that ship an npm package (contracts, db).
+# Release PRs, tags and CHANGELOG.md from Conventional Commits (release-please), then the
+# package publish to GitHub Packages when a release was created. Call form documented in
+# the headers of release.yml and publish.yml of meteo-consensus/.github at v0.1.1.
+# Only the publish call is granted `packages: write`.
 name: Release
 
 on:
@@ -10,10 +12,14 @@ permissions: {}
 
 jobs:
   release:
-    uses: meteo-consensus/.github/.github/workflows/release.yml@62883f3d2d53c3c756fbcdb3c0888bfebc0656a3 # main, untagged (09/11/2026)
-    with:
-      publish: true
+    uses: meteo-consensus/.github/.github/workflows/release.yml@0827d7dbbc9550ff61f0f6e147bfac64f26b6d23 # v0.1.1
     permissions:
       contents: write
       pull-requests: write
+  publish:
+    needs: release
+    if: needs.release.outputs.release_created == 'true'
+    uses: meteo-consensus/.github/.github/workflows/publish.yml@0827d7dbbc9550ff61f0f6e147bfac64f26b6d23 # v0.1.1
+    permissions:
+      contents: read
       packages: write
