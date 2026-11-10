@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/meteo-consensus/contracts/compare/v0.1.1...v0.2.0) (2026-11-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* **schema:** accept only catalogued open-meteo hosts in sourceApi ([#31](https://github.com/meteo-consensus/contracts/issues/31))
+
+### Features
+
+* **schema:** accept only catalogued open-meteo hosts in sourceApi ([#31](https://github.com/meteo-consensus/contracts/issues/31)) ([a15d6c0](https://github.com/meteo-consensus/contracts/commit/a15d6c086053a11266c5d16af6b9bc1d3022d526)), closes [#14](https://github.com/meteo-consensus/contracts/issues/14)
+
 ## [0.1.1](https://github.com/meteo-consensus/contracts/compare/v0.1.0...v0.1.1) (2026-11-10)
 
 
