@@ -10,7 +10,7 @@ permissions: {}
 
 jobs:
   release:
-    uses: meteo-consensus/.github/.github/workflows/release.yml@main
+    uses: meteo-consensus/.github/.github/workflows/release.yml@62883f3d2d53c3c756fbcdb3c0888bfebc0656a3 # main, untagged (09/11/2026)
     with:
       publish: true
     permissions:
