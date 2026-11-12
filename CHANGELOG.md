@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/meteo-consensus/contracts/compare/v0.2.1...v0.2.2) (2026-11-12)
+
+
+### Bug Fixes
+
+* **schema:** reject invisible characters and malformed text in station names ([#41](https://github.com/meteo-consensus/contracts/issues/41)) ([d753703](https://github.com/meteo-consensus/contracts/commit/d7537033b6baeb76dd74afc43b15d1f8806bf779)), closes [#29](https://github.com/meteo-consensus/contracts/issues/29)
+
 ## [0.2.1](https://github.com/meteo-consensus/contracts/compare/v0.2.0...v0.2.1) (2026-11-10)
 
 
