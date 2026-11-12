@@ -79,6 +79,7 @@ describe("StationSchema", () => {
     "MARSEILLE-MARIGNANE",
     "L'ÎLE-D'YEU",
     "Saint-Étienne-de-Tinée",
+    "Saint-Martin-d’Hères",
     "Montélimar – Ancône",
     "A".repeat(STATION_NAME_MAX_LENGTH),
   ])("accepts the name %j", (name) => {
@@ -99,12 +100,44 @@ describe("StationSchema", () => {
     },
   );
 
-  it.each([" STATION", "STATION ", " STATION", "STATION ", " "])(
+  it.each([" STATION", "STATION ", "\u00A0STATION", "STATION\u2003", " "])(
     "rejects the name %j, which starts or ends with whitespace",
     (name) => {
       expect(StationSchema.safeParse({ ...station, name }).success).toBe(false);
     },
   );
+
+  it.each([
+    ["Cf, right-to-left override", "STATION\u202ETEST"],
+    ["Cf, left-to-right isolate", "STATION\u2066TEST"],
+    ["Cf, pop directional isolate", "STATION\u2069TEST"],
+    ["Cf, zero-width space", "STATION\u200BTEST"],
+    ["Cf, leading zero-width space", "\u200BSTATION"],
+    ["Cf, byte order mark", "STATION\uFEFFTEST"],
+    ["Zl, line separator", "STATION\u2028TEST"],
+    ["Zp, paragraph separator", "STATION\u2029TEST"],
+    ["Co, private use", "STATION\uE000TEST"],
+    ["Co, supplementary private use", "STATION\u{F0000}TEST"],
+    ["Cn, unassigned", "STATION\u0378TEST"],
+    ["Cn, noncharacter", "STATION\uFFFFTEST"],
+    ["U+FFFD replacement", "STATION\uFFFDTEST"],
+  ])("rejects a name with a %s character", (_category, name) => {
+    expect(StationSchema.safeParse({ ...station, name }).success).toBe(false);
+  });
+
+  it.each([
+    ["lone high surrogate", "STATION\uD800TEST"],
+    ["lone low surrogate", "STATION\uDC00TEST"],
+    ["trailing high surrogate", "STATION\uD83D"],
+    ["reversed surrogate pair", "STATION\uDE00\uD83D"],
+  ])("rejects a malformed name with a %s", (_case, name) => {
+    expect(StationSchema.safeParse({ ...station, name }).success).toBe(false);
+  });
+
+  it("accepts a well-formed surrogate pair of an assigned character", () => {
+    const name = "STATION \u{1D400}";
+    expect(StationSchema.parse({ ...station, name }).name).toBe(name);
+  });
 
   it("rejects an unknown field", () => {
     expect(StationSchema.safeParse({ ...station, department: "13" }).success).toBe(false);

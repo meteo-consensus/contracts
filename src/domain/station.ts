@@ -25,14 +25,22 @@ export const STATION_NAME_MAX_LENGTH = 100;
 
 /**
  * Station name (`NOM_USUEL`), stored and then served by `api` and `web`: 1 to
- * {@link STATION_NAME_MAX_LENGTH} characters, no control character (C0, DEL, C1), no leading or
- * trailing whitespace. The value is validated as is, never trimmed: cleaning is the caller's job.
+ * {@link STATION_NAME_MAX_LENGTH} characters, well-formed UTF-16 (no lone surrogate, which
+ * node-postgres would silently store as U+FFFD), no leading or trailing whitespace, and none of:
+ * control (`Cc`), format (`Cf`: bidirectional controls, zero-width characters), line or paragraph
+ * separator (`Zl`, `Zp`), private-use (`Co`) or unassigned (`Cn`) characters, nor U+FFFD, the
+ * trace of a failed decoding. The value is validated as is, never trimmed: cleaning is the
+ * caller's job.
  */
 const StationNameSchema = z
   .string()
   .min(1)
   .max(STATION_NAME_MAX_LENGTH)
-  .regex(/^\P{Cc}*$/u, "name must not contain control characters")
+  .refine((name) => name.isWellFormed(), "name must be well-formed UTF-16 (no lone surrogate)")
+  .regex(
+    /^[^\p{Cc}\p{Cf}\p{Zl}\p{Zp}\p{Co}\p{Cn}\u{FFFD}]*$/u,
+    "name must not contain control, format, line or paragraph separator, private-use, unassigned or replacement characters",
+  )
   .regex(/^(?!\s)[\s\S]*(?<!\s)$/, "name must not start or end with whitespace");
 
 /**
