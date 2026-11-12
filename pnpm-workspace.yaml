@@ -5,5 +5,12 @@ packages:
 # A version is installable only once it has been public for 7 days (minutes).
 minimumReleaseAge: 10080
 
-# No dependency runs install scripts unless listed here with a reason in the PR.
-onlyBuiltDependencies: []
+# Dependency install scripts. pnpm denies them by default: `pnpm install` fails with
+# ERR_PNPM_IGNORED_BUILDS on any package with scripts that is not approved. The empty map only
+# makes that default explicit and gives approvals one place. An entry maps a package to `true`
+# (may run its scripts) or `false` (denied, the install goes on without them). A `true` entry
+# carries its reason in a comment on its line or the line just above (checked by CI), and is
+# also justified in the PR. Every approval goes here: `dangerouslyAllowAllBuilds` and the `build` capability of
+# `permissions` (which overrides this map) are forbidden without an owner decision. This
+# replaced `onlyBuiltDependencies`, which pnpm 11 and later ignore silently (factory#67).
+allowBuilds: {}
