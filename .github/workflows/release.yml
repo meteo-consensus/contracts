@@ -1,6 +1,6 @@
 # Release PRs, tags and CHANGELOG.md from Conventional Commits (release-please), then the
 # package publish to GitHub Packages when a release was created. Call form documented in
-# the headers of release.yml and publish.yml of meteo-consensus/.github at v0.1.2.
+# the headers of release.yml and publish.yml of meteo-consensus/.github at v0.1.3.
 # Only the publish call is granted `packages: write`.
 name: Release
 
@@ -12,14 +12,14 @@ permissions: {}
 
 jobs:
   release:
-    uses: meteo-consensus/.github/.github/workflows/release.yml@046d0ec95d05a60e379383a9238b3f4bdf6d41c9 # v0.1.2
+    uses: meteo-consensus/.github/.github/workflows/release.yml@5f4bc58cc4bcc0bea74123dd39cbc54235c380e7 # v0.1.3 (tag checked 12/11/2026)
     permissions:
       contents: write
       pull-requests: write
   publish:
     needs: release
     if: needs.release.outputs.release_created == 'true'
-    uses: meteo-consensus/.github/.github/workflows/publish.yml@046d0ec95d05a60e379383a9238b3f4bdf6d41c9 # v0.1.2
+    uses: meteo-consensus/.github/.github/workflows/publish.yml@5f4bc58cc4bcc0bea74123dd39cbc54235c380e7 # v0.1.3 (tag checked 12/11/2026)
     permissions:
       contents: read
       packages: write
