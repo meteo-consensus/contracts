@@ -31,10 +31,10 @@
     "unused": "knip --tsConfig tsconfig.build.json"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.6",
+    "@biomejs/biome": "2.6.8",
     "@types/node": "26.6.6",
     "@vitest/coverage-v8": "5.1.0",
-    "knip": "6.44.2",
+    "knip": "6.45.1",
     "typescript": "7.0.2",
     "vitest": "5.1.0",
     "zod": "4.6.7"
